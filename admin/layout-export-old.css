@@ -1,0 +1,218 @@
+/* =====================================================================
+   Layout from admin/layout.html — 2026-11-22
+   Grid 15 × 8 square modules; column gutter 0u, row gutter 0u
+   (after each column, like --hg).
+   Checked at 1920 × 1080: module 113.9 px, gutter 0.0 px.
+   Positions are written the way css/style.css writes them; nested parts are
+   relative to their container. Text boxes are written by their top edge —
+   where the stylesheet sets a baseline (title, menu) keep its "- .86em".
+   ===================================================================== */
+@media (min-width: 821px) {
+  :root {
+    --u: min(calc(89vw / 15), calc(86.5dvh / 8));   /* one module */
+    --pl: calc((100vw - 15 * var(--u)) / 2);   /* left margin */
+    --ax2: var(--pl);                                  /* right margin */
+    --mt: calc((100dvh - 8 * var(--u)) / 2);   /* top and bottom margin */
+    --gx: 0px;   /* column gutter */
+    --gy: 0px;   /* row gutter */
+    --hg: var(--gx);
+  }
+
+  /* ---------- Home ---------- */
+  .frame > .side {   /* Right column (.side): columns 12–14, rows 1–8 */
+    left: calc(var(--pl) + 11 * var(--u));
+    top: var(--mt);
+    width: calc(3 * var(--u));
+    height: calc(8 * var(--u));
+  }
+  .frame > .stage {   /* Interactive pattern: columns 1–6, rows 2–8 */
+    left: var(--pl);
+    top: calc(var(--mt) + var(--u));
+    width: calc(6 * var(--u));
+    height: calc(7 * var(--u));
+  }
+  .frame > .org {   /* University logo: columns 1–2, rows 8 */
+    left: var(--pl);
+    top: calc(var(--mt) + 7.34 * var(--u));
+    width: calc(1.65 * var(--u));
+  }
+  .frame > .intro {   /* Headline: columns 7–13, rows 2–3 */
+    left: calc(var(--pl) + 6.25 * var(--u));
+    top: calc(var(--mt) + var(--u));
+    width: calc(6 * var(--u));
+    height: calc(1.25 * var(--u));
+    font-size: calc(.298 * var(--u)); line-height: 1.2;
+  }
+  .intro p {   /* Intro text: columns 7–11, rows 3–8 */
+    max-width: calc(4 * var(--u));
+    font-size: calc(.205 * var(--u)); line-height: 1.3;
+  }
+  .meta {   /* Links: columns 13–14, rows 1 · inside Right column (.side) */
+    left: var(--u);
+    top: 0;
+    width: calc(2 * var(--u));
+    height: calc(.5 * var(--u));
+    font-size: calc(.218 * var(--u)); line-height: 1.05;
+  }
+  .frame > .mark {   /* Outline square: columns 15, rows 1 */
+    left: calc(var(--pl) + 14.29 * var(--u));
+    top: var(--mt);
+    width: calc(.71 * var(--u));
+    height: calc(.71 * var(--u));
+  }
+  .title {   /* Title: columns 12–14, rows 5–6 · inside Right column (.side) */
+    left: 0;
+    top: calc(4.64 * var(--u));
+    width: calc(3 * var(--u));
+    height: calc(.5 * var(--u));
+    font-size: calc(.42 * var(--u)); line-height: 1;
+  }
+  .nav {   /* Menu: columns 12–14, rows 3–5 · inside Right column (.side) */
+    left: 0;
+    top: calc(2.5 * var(--u));
+    width: calc(3 * var(--u));
+    height: calc(1.75 * var(--u));
+    font-size: calc(.42 * var(--u)); line-height: 1;
+  }
+  .sliver {   /* Pattern strip: columns 15, rows 2–8 */
+    left: calc(var(--pl) + 14 * var(--u));
+    top: calc(var(--mt) + var(--u));
+    width: var(--u);
+    height: calc(7 * var(--u));
+  }
+
+  /* ---------- Section (Credits)  (index.html#credits) ---------- */
+  .frame > .panel {   /* Section (.panel): columns 1–14, rows 2–8 */
+    left: var(--pl);
+    top: calc(var(--mt) + var(--u));
+    width: calc(14 * var(--u));
+    height: calc(7 * var(--u));
+  }
+  .phead h2 {   /* Section title: columns 1–6, rows 2 · inside Section (.panel) */
+    left: 0;
+    top: calc(.38 * var(--u));
+    width: calc(6 * var(--u));
+    height: calc(.5 * var(--u));
+    font-size: calc(.44 * var(--u)); line-height: 1;
+  }
+  .phead .lede {   /* Lede: columns 7–10, rows 2 · inside Section (.panel) */
+    left: calc(6 * var(--u));
+    top: calc(.2 * var(--u));
+    width: calc(4 * var(--u));
+    height: calc(.65 * var(--u));
+    font-size: calc(.205 * var(--u)); line-height: 1.3;
+  }
+  .phead .back {   /* Back: columns 12–14, rows 2 · inside Section (.panel) */
+    left: calc(11 * var(--u));
+    top: calc(.5 * var(--u));
+    width: calc(3 * var(--u));
+    height: calc(.36 * var(--u));
+    font-size: calc(.32 * var(--u)); line-height: 1;
+  }
+  .panel > .credits {   /* Content (credits): columns 1–14, rows 3–6 · inside Section (.panel) */
+    left: 0;
+    top: var(--u);
+    width: calc(14 * var(--u));
+    height: calc(3.4 * var(--u));
+    font-size: calc(.19 * var(--u)); line-height: 1.32;
+  }
+  .sliver {   /* Pattern strip: columns 15, rows 3–8 */
+    left: calc(var(--pl) + 14 * var(--u));
+    top: calc(var(--mt) + 2 * var(--u));
+    width: var(--u);
+    height: calc(6 * var(--u));
+  }
+
+  /* ---------- Structure & Process  (index.html#structure) ---------- */
+  .frame > .panel.is-feat {   /* Section (.panel.is-feat): columns 1–14, rows 1–8 */
+    left: var(--pl);
+    top: var(--mt);
+    width: calc(14 * var(--u));
+    height: calc(8 * var(--u));
+  }
+  .feat__imgbox {   /* Image carousel: columns 1–9, rows 1–8 · inside Section (.panel.is-feat) */
+    left: 0;
+    top: 0;
+    width: calc(9 * var(--u));
+    height: calc(8 * var(--u));
+  }
+  .feat__title {   /* Title over image: columns 1–7, rows 1–2 · inside Section (.panel.is-feat) */
+    left: calc(.5 * var(--u));
+    top: calc(.63 * var(--u));
+    width: calc(6 * var(--u));
+    height: calc(.5 * var(--u));
+    font-size: calc(.44 * var(--u)); line-height: 1;
+  }
+  .feat__back {   /* Back: columns 13–14, rows 2 · inside Section (.panel.is-feat) */
+    left: calc(12.5 * var(--u));
+    top: calc(.99 * var(--u));
+    width: calc(1.5 * var(--u));
+    height: calc(.36 * var(--u));
+    font-size: calc(.3 * var(--u)); line-height: 1;
+  }
+  .feat__text {   /* Text column: columns 10–14, rows 2–8 · inside Section (.panel.is-feat) */
+    left: calc(9.5 * var(--u));
+    top: calc(1.5 * var(--u));
+    width: calc(4 * var(--u));
+    height: calc(6.5 * var(--u));
+    font-size: calc(.2 * var(--u)); line-height: 1.3;
+  }
+  .feat__foot {   /* Image caption bar: columns 1–9, rows 8 · inside Section (.panel.is-feat) */
+    left: calc(.5 * var(--u));
+    top: calc(7.45 * var(--u));
+    width: calc(8 * var(--u));
+    height: calc(.26 * var(--u));
+    font-size: calc(.17 * var(--u)); line-height: 1.2;
+  }
+  .sliver {   /* Pattern strip: columns 15, rows 3–8 */
+    left: calc(var(--pl) + 14 * var(--u));
+    top: calc(var(--mt) + 2 * var(--u));
+    width: var(--u);
+    height: calc(6 * var(--u));
+  }
+
+  /* ---------- Explore (cards)  (index.html#explore) ---------- */
+  .frame > .panel.is-cards {   /* Section (.panel.is-cards): columns 1–14, rows 1–8 */
+    left: var(--pl);
+    top: var(--mt);
+    width: calc(14 * var(--u));
+    height: calc(8 * var(--u));
+  }
+  .panel.is-cards .htrack {   /* Card track (cut at col 13): columns 1–13, rows 2–8 · inside Section (.panel.is-cards) */
+    left: 0;
+    top: calc(1.39 * var(--u));
+    width: calc(13 * var(--u));
+    height: calc(6.61 * var(--u));
+  }
+  .panel.is-cards .phead h2 {   /* Section title: columns 1–5, rows 1–2 · inside Section (.panel.is-cards) */
+    left: 0;
+    top: calc(.6 * var(--u));
+    width: calc(5 * var(--u));
+    height: calc(.5 * var(--u));
+    font-size: calc(.44 * var(--u)); line-height: 1;
+  }
+  .panel.is-cards .phead .back {   /* Back: columns 13–14, rows 2 · inside Section (.panel.is-cards) */
+    left: calc(12.5 * var(--u));
+    top: calc(.99 * var(--u));
+    width: calc(1.5 * var(--u));
+    height: calc(.36 * var(--u));
+    font-size: calc(.3 * var(--u)); line-height: 1;
+  }
+  .panel.is-cards .htrack > .card {   /* Card 1: columns 1–4, rows 2–8 */
+    left: var(--pl);
+    top: calc(var(--mt) + 1.39 * var(--u));
+    width: calc(3.72 * var(--u));
+    height: calc(6.61 * var(--u));
+    /* number .53u, title .42u */
+  }
+  /* Card 2: columns 5–8, rows 2–8 — left 4.13u, top 1.39u, 3.72 × 6.61u */
+  /* Card 3: columns 9–12, rows 2–8 — left 8.26u, top 1.39u, 3.72 × 6.61u */
+  /* Card 4: columns 13–17, rows 2–8 — left 12.39u, top 1.39u, 3.72 × 6.61u */
+  /* Card 5: columns 17–21, rows 2–8 — left 16.52u, top 1.39u, 3.72 × 6.61u */
+  .sliver {   /* Pattern strip: columns 15, rows 3–8 */
+    left: calc(var(--pl) + 14 * var(--u));
+    top: calc(var(--mt) + 2 * var(--u));
+    width: var(--u);
+    height: calc(6 * var(--u));
+  }
+}
