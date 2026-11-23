@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Emergence: build the interactive piece in this file -->
+  <title>Emergence — Turning Point</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/explore.css">
+  <style>
+    /* your styles */
+    #work { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); letter-spacing: .2em; text-transform: uppercase; font-size: var(--small); }
+  </style>
+</head>
+<body>
+  <!-- 2. The shared top bar: back link, name, about toggle -->
+  <header class="xbar">
+    <a class="back" href="../../index.html#explore"><span class="arrow">←</span> Turning Point</a>
+    <span class="name"><em>04</em>Emergence</span>
+    <button type="button" id="infoBtn" aria-expanded="false" aria-controls="info">About</button>
+  </header>
+
+  <aside class="xinfo" id="info">
+    <p>Emergence — a short text about this exploration.</p>
+  </aside>
+
+  <!-- 3. Your piece goes here: a canvas, p5.js sketch, Three.js scene, video … -->
+  <main id="work">Interactive piece in progress</main>
+
+  <!-- Optional: the same reaction–diffusion engine used on the homepage -->
+  <!-- <script src="../../js/rd.js"></script> -->
+  <script>
+    const info = document.getElementById("info"), infoBtn = document.getElementById("infoBtn");
+    infoBtn.addEventListener("click", () => {
+      const open = info.classList.toggle("is-open");
+      infoBtn.setAttribute("aria-expanded", open);
+      infoBtn.textContent = open ? "Close" : "About";
+    });
+  </script>
+  <!-- 4. Then add a { type: "project", … } box for it in js/content.js -->
+</body>
+</html>

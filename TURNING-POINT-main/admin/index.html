@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Turning Point — Editor</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1f1c19; --grey: #5d5853; --soft: #8d857d; --dim: #d9d0c6; --bg: #f7f4f0;
+    --gold: #a9844f; --rust: #bf6a33; --line: rgba(31,28,25,.13); --ok: #4f7a4a; --bad: #b2392b;
+    --sans: "Source Sans 3", Calibri, "Segoe UI", system-ui, sans-serif;
+    --serif: "Cormorant Garamond", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--sans); font-size: 15px; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  a { color: var(--rust); }
+
+  /* layout */
+  .top {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--line);
+  }
+  .brand { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-right: auto; }
+  .brand em { font-family: var(--serif); font-size: 20px; letter-spacing: 0; text-transform: none; color: var(--ink); margin-left: .5em; }
+  .status { font-size: 12px; letter-spacing: .08em; color: var(--soft); padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; white-space: nowrap; }
+  .status.on { color: var(--ok); border-color: rgba(79,122,74,.4); }
+  .status.dirty::after { content: " · unsaved changes"; color: var(--rust); }
+  .wrap { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: calc(100% - 60px); }
+  .nav { border-right: 1px solid var(--line); padding: 18px 12px; background: #fff; }
+  .main { padding: 26px clamp(16px, 3vw, 48px) 120px; max-width: 1100px; }
+
+  /* buttons */
+  .btn { border: 1px solid var(--line); background: #fff; padding: 7px 13px; border-radius: 4px; cursor: pointer; font-size: 13px; letter-spacing: .04em; white-space: nowrap; }
+  .btn:hover { border-color: var(--rust); color: var(--rust); }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .btn.primary:hover { background: var(--rust); border-color: var(--rust); color: #fff; }
+  .btn.small { padding: 3px 8px; font-size: 12px; }
+  .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .icon { border: 0; background: none; cursor: pointer; padding: 3px 6px; color: var(--soft); font-size: 14px; border-radius: 3px; }
+  .icon:hover { color: var(--rust); background: var(--bg); }
+
+  /* left nav */
+  .nav h4 { margin: 0 8px 8px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--soft); font-weight: 600; }
+  .nav ul { list-style: none; margin: 0 0 18px; padding: 0; }
+  .nav li { display: flex; align-items: center; border-radius: 4px; }
+  .nav li > button.go { flex: 1; text-align: left; border: 0; background: none; padding: 7px 8px; cursor: pointer; border-radius: 4px; }
+  .nav li.on > button.go { background: var(--bg); color: var(--rust); }
+  .nav li > button.go:hover { color: var(--rust); }
+  .nav .ctl { display: none; }
+  .nav li:hover .ctl { display: flex; }
+  .nav .num { font-family: var(--serif); font-style: italic; color: var(--gold); margin-right: .5em; }
+
+  /* forms */
+  h2 { font-weight: 300; font-size: 30px; margin: 0 0 4px; }
+  h2 .num { font-family: var(--serif); font-style: italic; color: var(--gold); margin-right: .3em; }
+  .sub { color: var(--soft); margin: 0 0 24px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field.full { grid-column: 1 / -1; }
+  .field > label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--grey); font-weight: 600; }
+  .field .hint { font-size: 12px; color: var(--soft); }
+  input[type=text], input[type=url], input[type=date], input[type=time], select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: #fff;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--rust); box-shadow: 0 0 0 3px rgba(191,106,51,.12); }
+  textarea { min-height: 70px; resize: vertical; line-height: 1.45; }
+  textarea.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; min-height: 110px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; padding-top: 18px; }
+
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 6px; margin: 0 0 12px;
+  }
+  .card > header {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; user-select: none;
+  }
+  .card > header .badge { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #fff; background: var(--gold); padding: 2px 7px; border-radius: 3px; }
+  .card > header .t { flex: 1; color: var(--grey); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card > .body { padding: 6px 14px 16px; border-top: 1px solid var(--line); }
+  .card.closed > .body { display: none; }
+  .card .chev { color: var(--soft); transition: transform .2s; }
+  .card.closed .chev { transform: rotate(-90deg); }
+
+  .row { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 8px; }
+  .row > :first-child { flex: 1; }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .media { display: flex; gap: 10px; align-items: center; }
+  .media input { flex: 1; }
+  .thumb { width: 64px; height: 64px; flex: none; border-radius: 3px; background: var(--bg) center/cover no-repeat; border: 1px solid var(--line); overflow: hidden; }
+  .thumb video, .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .addbar { display: flex; gap: 8px; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); }
+  .addbar select { width: auto; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0 22px; }
+  h3 { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--grey); margin: 0 0 12px; }
+
+  /* dialog */
+  dialog { border: 1px solid var(--line); border-radius: 8px; padding: 22px 24px; width: min(520px, 92vw); }
+  dialog::backdrop { background: rgba(31,28,25,.35); }
+  dialog h3 { margin-bottom: 14px; }
+  dialog .grid { grid-template-columns: 1fr; }
+  dialog footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0;
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 14px;
+    transition: opacity .3s, transform .3s; z-index: 50; max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { background: var(--bad); }
+  .combine { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 6px; font-size: 13px; color: var(--soft); }
+  .combine.on { border-color: var(--rust); color: var(--ink); background: #fff; }
+  .card.picked { border-color: var(--rust); box-shadow: 0 0 0 2px rgba(191,106,51,.15); }
+  .pick { width: 16px; height: 16px; accent-color: var(--rust); cursor: pointer; }
+  .row.slide { padding: 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+  .intro-note { background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--gold); padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; color: var(--grey); font-size: 14px; line-height: 1.5; }
+  .intro-note b { color: var(--ink); }
+
+  @media (max-width: 760px) {
+    .wrap { grid-template-columns: 1fr; }
+    .nav { border-right: 0; border-bottom: 1px solid var(--line); }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand">Turning Point <em>editor</em></div>
+    <span class="status" id="status">Not connected — editing the published content</span>
+    <button class="btn" id="openFolder" title="Chrome / Edge: read and write the site folder on this computer">Open site folder</button>
+    <button class="btn" id="openGithub">GitHub…</button>
+    <button class="btn" id="preview" title="Open the site with your unsaved changes">Preview draft ↗</button>
+    <button class="btn" id="download" title="Download js/content.js to replace by hand">Download content.js</button>
+    <button class="btn primary" id="save" disabled>Save</button>
+  </div>
+
+  <div class="wrap">
+    <aside class="nav" id="nav"></aside>
+    <main class="main" id="main"></main>
+  </div>
+
+  <dialog id="ghDialog">
+    <form method="dialog">
+      <h3>Save to GitHub</h3>
+      <div class="grid">
+        <div class="field"><label>Repository (owner/name)</label><input type="text" id="ghRepo" placeholder="your-name/turning-point"></div>
+        <div class="field"><label>Branch</label><input type="text" id="ghBranch" value="main"></div>
+        <div class="field"><label>Folder inside the repository</label><input type="text" id="ghBase" placeholder="(leave empty if the site is at the top level)"></div>
+        <div class="field"><label>Personal access token</label><input type="text" id="ghToken" placeholder="github_pat_…" autocomplete="off">
+          <span class="hint">A fine-grained token with <b>Contents: read and write</b> on this one repository. Create it at github.com → Settings → Developer settings.</span></div>
+        <label class="check"><input type="checkbox" id="ghRemember"> Remember on this browser</label>
+      </div>
+      <footer>
+        <button class="btn" value="cancel">Cancel</button>
+        <button class="btn primary" id="ghConnect" value="ok">Connect</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/content.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ======================================================================
+     Data + helpers
+     ====================================================================== */
+  let data = JSON.parse(JSON.stringify(window.SITE || { title: "", meta: "", intro: [], socials: [], sections: [] }));
+  let dirty = false;
+  let view = { kind: "site", index: 0 };
+  const open = new Set();                 // which item cards are expanded
+  const selected = new Set();             // images ticked for "combine into carousel"
+  const blobs = {};                       // freshly uploaded files → object URLs for previews
+
+  const $ = s => document.querySelector(s);
+  const h = (tag, attrs = {}, ...kids) => {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else if (k === "class") el.className = v;
+      else if (k === "html") el.innerHTML = v;
+      else if (k === "value") el.value = v;
+      else if (k in el && typeof v !== "string") el[k] = v;
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+    kids.flat().forEach(c => c != null && el.append(c.nodeType ? c : document.createTextNode(c)));
+    return el;
+  };
+  const toast = (msg, err) => {
+    const t = $("#toast"); t.textContent = msg; t.classList.toggle("err", !!err); t.classList.add("show");
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), err ? 6000 : 2600);
+  };
+  const setDirty = (v = true) => { dirty = v; renderStatus(); };
+  const move = (arr, i, d) => { const j = i + d; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; };
+  const strip = s => String(s || "").replace(/<[^>]+>/g, "").trim();
+  const resolve = p => !p ? "" : blobs[p] || (/^(https?:|data:|blob:)/.test(p) ? p : "../" + p);
+
+  window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+  /* ======================================================================
+     Field schema
+     ====================================================================== */
+  const TYPES = {
+    text:    { label: "Text", fields: [["span", "span"], ["title", "text", "Heading"], ["body", "html", "Body (HTML: <p>, <em>, <a href>)"]] },
+    image:   { label: "Image", fields: [["span", "span"], ["src", "media:image", "Image"], ["alt", "text", "Alt text (for screen readers)"], ["caption", "html1", "Caption"], ["ratio", "text", "Aspect ratio (w/h, e.g. 4/3) — set automatically on upload"]] },
+    carousel:{ label: "Carousel", fields: [["span", "span"], ["ratio", "text", "Aspect ratio of the frame (w/h) — set from the first image"], ["slides", "slides"]] },
+    video:   { label: "Video", fields: [["span", "span"], ["src", "media:video", "Video file (.mp4)"], ["poster", "media:image", "Poster image"], ["caption", "html1", "Caption"], ["ratio", "text", "Aspect ratio (w/h)"], ["autoplay", "bool", "Play silently on a loop (no controls)"]] },
+    embed:   { label: "Embed", fields: [["span", "span"], ["src", "url", "Embed URL (YouTube: https://www.youtube.com/embed/ID)"], ["caption", "html1", "Caption"], ["ratio", "text", "Aspect ratio (w/h)"]] },
+    project: { label: "Exploration", fields: [["index", "text", "Number"], ["title", "text", "Title"], ["text", "html1", "Description"], ["href", "text", "Page (e.g. explorations/flux/index.html) — empty = forthcoming"], ["thumb", "media:image", "Thumbnail (portrait, 3:5)"], ["status", "text", "Status label (e.g. In progress)"], ["newTab", "bool", "Open in a new tab"]] },
+    event:   { label: "Event", fields: [["span", "span"], ["date", "date", "Date"], ["time", "time", "Time"], ["title", "text", "Title"], ["place", "text", "Place"], ["text", "html1", "Description"], ["link", "url", "Link"], ["linkLabel", "text", "Link label (e.g. Register)"]] },
+    credits: { label: "Credits", fields: [["span", "span"], ["groups", "groups"]] },
+    links:   { label: "Links", fields: [["span", "span"], ["title", "text", "Heading"], ["links", "pairs:label:url"]] }
+  };
+  const BLANK = {
+    text: { type: "text", span: 2, title: "", body: "<p></p>" },
+    image: { type: "image", span: 2, src: "", alt: "", caption: "", ratio: "4/3" },
+    carousel: { type: "carousel", span: 3, ratio: "1800/1273", slides: [] },
+    video: { type: "video", span: 2, src: "", poster: "", caption: "", ratio: "16/9" },
+    embed: { type: "embed", span: 2, src: "", caption: "", ratio: "16/9" },
+    project: { type: "project", index: "", title: "", text: "", href: "", thumb: "", status: "" },
+    event: { type: "event", span: 4, date: new Date().toISOString().slice(0, 10), time: "", title: "", place: "", text: "", link: "", linkLabel: "" },
+    credits: { type: "credits", span: 3, groups: [{ role: "", names: [] }] },
+    links: { type: "links", span: 1, title: "", links: [{ label: "", url: "" }] }
+  };
+  const summary = it => it.type === "carousel" ? `${(it.slides || []).length} images — ${strip((it.slides || [])[0]?.caption) || ""}` : strip(it.title) || strip(it.caption) || strip(it.alt) || (it.src || "").split("/").pop() || strip(it.text) || (it.groups ? it.groups.map(g => g.role).join(", ") : "") || "(empty)";
+
+  /* ======================================================================
+     Field widgets
+     ====================================================================== */
+  function fieldEl(obj, key, kind, label, onChange) {
+    const set = v => { obj[key] = v; setDirty(); onChange && onChange(); };
+    const wrap = (cls, ...kids) => h("div", { class: "field " + (cls || "") }, label ? h("label", {}, label) : null, ...kids);
+
+    if (kind === "span") {
+      return wrap("", h("select", { onchange: e => set(+e.target.value) },
+        [1, 2, 3, 4].map(n => h("option", { value: n, selected: (obj.span || 1) === n }, n === 4 ? "4 — full width" : `${n} column${n > 1 ? "s" : ""}`))));
+    }
+    if (kind === "layout") {
+      return wrap("", h("select", { onchange: e => set(e.target.value || undefined) },
+        h("option", { value: "", selected: !obj.layout }, "Vertical — scroll down"),
+        h("option", { value: "horizontal", selected: obj.layout === "horizontal" }, "Horizontal — scroll sideways, full height"),
+        h("option", { value: "feature", selected: obj.layout === "feature" }, "Feature — one big image carousel beside a column of text")));
+    }
+    if (kind === "bool") {
+      return h("label", { class: "check" }, h("input", { type: "checkbox", checked: !!obj[key], onchange: e => set(e.target.checked) }), label);
+    }
+    if (kind === "html") {
+      return wrap("full", h("textarea", { class: "code", value: obj[key] || "", oninput: e => set(e.target.value) }));
+    }
+    if (kind === "html1") {
+      return wrap("full", h("textarea", { value: obj[key] || "", rows: 2, oninput: e => set(e.target.value) }));
+    }
+    if (kind === "date" || kind === "time" || kind === "url" || kind === "text") {
+      return wrap("", h("input", { type: kind === "url" ? "url" : kind, value: obj[key] || "", oninput: e => set(e.target.value) }));
+    }
+    if (kind.startsWith("media")) {
+      const accept = kind.endsWith("video") ? "video/*" : "image/*";
+      const thumb = h("div", { class: "thumb" });
+      const paint = () => {
+        thumb.innerHTML = "";
+        const src = resolve(obj[key]);
+        if (!src) return;
+        thumb.append(/\.(mp4|webm|mov)$/i.test(obj[key]) ? h("video", { src, muted: true }) : h("img", { src, alt: "" }));
+      };
+      const input = h("input", { type: "text", value: obj[key] || "", placeholder: "assets/…", oninput: e => { set(e.target.value); paint(); } });
+      const file = h("input", { type: "file", accept, hidden: true, onchange: async e => {
+        const f = e.target.files[0]; if (!f) return;
+        const path = await uploadFile(f);
+        if (!path) return;
+        input.value = path; obj[key] = path; setDirty(); paint();
+        if (key === "src" && "ratio" in obj) {
+          const r = await mediaRatio(f); if (r) { obj.ratio = r; renderMain(); }
+        }
+      } });
+      paint();
+      return wrap("full", h("div", { class: "media" }, thumb, input,
+        h("button", { class: "btn small", type: "button", onclick: () => backend ? file.click() : toast("Open the site folder or connect GitHub first, so the file has somewhere to go.", true) }, "Upload…"), file));
+    }
+    if (kind === "groups") {
+      obj.groups = obj.groups || [];
+      return h("div", { class: "field full" }, h("label", {}, "Groups — one name per line"),
+        h("div", { class: "list" }, obj.groups.map((g, i) => h("div", { class: "row" },
+          h("div", { class: "grid", style: "grid-template-columns: 1fr 1.4fr" },
+            h("input", { type: "text", value: g.role || "", placeholder: "Role", oninput: e => { g.role = e.target.value; setDirty(); } }),
+            h("textarea", { rows: Math.max(2, (g.names || []).length), value: (g.names || []).join("\n"), placeholder: "Names", oninput: e => { g.names = e.target.value.split("\n").map(s => s.trim()).filter(Boolean); setDirty(); } })),
+          ctl(obj.groups, i)))),
+        h("div", {}, h("button", { class: "btn small", type: "button", onclick: () => { obj.groups.push({ role: "", names: [] }); setDirty(); renderMain(); } }, "+ Add group")));
+    }
+    if (kind === "slides") {
+      obj.slides = obj.slides || [];
+      return h("div", { class: "field full" }, h("label", {}, "Slides"),
+        h("div", { class: "list" }, obj.slides.map((sl, i) => h("div", { class: "row slide" },
+          h("div", { class: "grid" },
+            fieldEl(sl, "src", "media:image", `Image ${i + 1}`, () => {
+              if (i === 0 && sl.src) mediaRatioFromPath(sl.src).then(r => { if (r) { obj.ratio = r; } });
+            }),
+            fieldEl(sl, "caption", "html1", "Caption"),
+            fieldEl(sl, "alt", "text", "Alt text")),
+          ctl(obj.slides, i)))),
+        h("div", {}, h("button", { class: "btn small", type: "button", onclick: () => { obj.slides.push({ src: "", alt: "", caption: "" }); setDirty(); renderMain(); } }, "+ Add slide")));
+    }
+    if (kind.startsWith("pairs")) {
+      const [, a, b] = kind.split(":");
+      obj[key] = obj[key] || [];
+      return h("div", { class: "field full" }, h("label", {}, label || key),
+        h("div", { class: "list" }, obj[key].map((p, i) => h("div", { class: "row" },
+          h("div", { class: "grid" },
+            h("input", { type: "text", value: p[a] || "", placeholder: a, oninput: e => { p[a] = e.target.value; setDirty(); } }),
+            h("input", { type: "text", value: p[b] || "", placeholder: b, oninput: e => { p[b] = e.target.value; setDirty(); } })),
+          ctl(obj[key], i)))),
+        h("div", {}, h("button", { class: "btn small", type: "button", onclick: () => { obj[key].push({ [a]: "", [b]: "" }); setDirty(); renderMain(); } }, "+ Add")));
+    }
+    return wrap("", h("input", { type: "text", value: obj[key] || "", oninput: e => set(e.target.value) }));
+  }
+
+  // ↑ ↓ ✕ controls for any list
+  function ctl(arr, i, extra) {
+    return h("div", { class: "ctl", style: "display:flex" },
+      h("button", { class: "icon", type: "button", title: "Move up", onclick: e => { e.stopPropagation(); move(arr, i, -1); setDirty(); render(); } }, "↑"),
+      h("button", { class: "icon", type: "button", title: "Move down", onclick: e => { e.stopPropagation(); move(arr, i, 1); setDirty(); render(); } }, "↓"),
+      extra || null,
+      h("button", { class: "icon", type: "button", title: "Delete", onclick: e => {
+        e.stopPropagation();
+        if (!confirm("Delete this?")) return;
+        arr.splice(i, 1); setDirty(); render();
+      } }, "✕"));
+  }
+
+  /* ======================================================================
+     Views
+     ====================================================================== */
+  function renderNav() {
+    const nav = $("#nav"); nav.innerHTML = "";
+    nav.append(h("h4", {}, "Site"),
+      h("ul", {}, h("li", { class: view.kind === "site" ? "on" : "" },
+        h("button", { class: "go", onclick: () => { view = { kind: "site" }; render(); } }, "Title, intro & links"))));
+    nav.append(h("h4", {}, "Sections"),
+      h("ul", {}, data.sections.map((s, i) => h("li", { class: view.kind === "section" && view.index === i ? "on" : "" },
+        h("button", { class: "go", onclick: () => { view = { kind: "section", index: i }; render(); } },
+          h("span", { class: "num" }, ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii"][i] || i + 1), s.label || s.id || "(untitled)"),
+        h("span", { class: "ctl" }, ctl(data.sections, i))))),
+      h("button", { class: "btn small", onclick: () => {
+        const id = prompt("Short id for the new section (letters only, used in the link, e.g. press):");
+        if (!id) return;
+        const clean = id.toLowerCase().replace(/[^a-z0-9-]/g, "");
+        if (!clean || data.sections.some(s => s.id === clean)) return toast("That id is empty or already used.", true);
+        data.sections.push({ id: clean, label: id, heading: id, lede: "", items: [] });
+        view = { kind: "section", index: data.sections.length - 1 }; setDirty(); render();
+      } }, "+ Add section"));
+  }
+
+  function renderMain() {
+    const main = $("#main"); main.innerHTML = "";
+    if (view.kind === "site") return renderSite(main);
+    const sec = data.sections[view.index];
+    if (!sec) { view = { kind: "site" }; return renderSite(main); }
+    renderSection(main, sec, view.index);
+  }
+
+  function renderSite(main) {
+    if (!backend) main.append(h("div", { class: "intro-note", html:
+      "<b>How saving works.</b> Edits stay in this page until you save. " +
+      "<b>Open site folder</b> (Chrome or Edge) writes straight into the site folder on your computer — then upload it as usual. " +
+      "<b>GitHub…</b> commits the changes to your repository; the live site updates about a minute later. " +
+      "<b>Download content.js</b> gives you the file to replace <code>js/content.js</code> by hand. " +
+      "<b>Preview draft</b> opens the site with your unsaved changes." }));
+    main.append(h("h2", {}, "Site"), h("p", { class: "sub" }, "Title, the line beside it, the introduction and social links."));
+    main.append(h("div", { class: "grid" },
+      fieldEl(data, "title", "text", "Title"),
+      fieldEl(data, "meta", "text", "Line beside the title (e.g. Delhi Art Biennale 2026)")));
+
+    main.append(h("hr"), h("h3", {}, "Introduction — one box per paragraph"),
+      h("p", { class: "sub", html: "HTML allowed. <code>&lt;a data-go='structure'&gt;structure&lt;/a&gt;</code> makes a word open that section." }));
+    data.intro = data.intro || [];
+    main.append(h("div", { class: "list" }, data.intro.map((p, i) => h("div", { class: "row" },
+      h("textarea", { rows: 3, value: p, oninput: e => { data.intro[i] = e.target.value; setDirty(); } }), ctl(data.intro, i)))));
+    main.append(h("div", { class: "addbar" }, h("button", { class: "btn small", onclick: () => { data.intro.push(""); setDirty(); renderMain(); } }, "+ Add paragraph")));
+
+    main.append(h("hr"), h("h3", {}, "Opening text — shown before the site, until the button is pressed"),
+      h("p", { class: "sub" }, "Leave the first line and the paragraphs empty to go straight to the site."));
+    data.preface = data.preface || { lead: "", paragraphs: [], button: "Enter" };
+    data.preface.paragraphs = data.preface.paragraphs || [];
+    main.append(h("div", { class: "grid" },
+      fieldEl(data.preface, "lead", "text", "First line"),
+      fieldEl(data.preface, "button", "text", "Button label")));
+    main.append(h("div", { class: "list" }, data.preface.paragraphs.map((p, i) => h("div", { class: "row" },
+      h("textarea", { rows: 4, value: p, oninput: e => { data.preface.paragraphs[i] = e.target.value; setDirty(); } }), ctl(data.preface.paragraphs, i)))));
+    main.append(h("div", { class: "addbar" }, h("button", { class: "btn small", onclick: () => { data.preface.paragraphs.push(""); setDirty(); renderMain(); } }, "+ Add paragraph")));
+
+    main.append(h("hr"), h("h3", {}, "Social links (shown beside the title)"));
+    data.socials = data.socials || [];
+    main.append(fieldEl(data, "socials", "pairs:label:url", " "));
+  }
+
+  function renderSection(main, sec, si) {
+    main.append(h("h2", {}, h("span", { class: "num" }, (["i", "ii", "iii", "iv", "v", "vi", "vii", "viii"][si] || si + 1) + "."), sec.heading || sec.label));
+    main.append(h("p", { class: "sub" }, `Opens at …/index.html#${sec.id}`));
+    main.append(h("div", { class: "grid" },
+      fieldEl(sec, "label", "text", "Menu label", renderNav),
+      fieldEl(sec, "id", "text", "Id (used in the link — letters, numbers, hyphens)", renderNav),
+      fieldEl(sec, "heading", "text", "Heading"),
+      fieldEl(sec, "lede", "text", "Short line beside the heading"),
+      fieldEl(sec, "layout", "layout", "Layout (desktop)"),
+      fieldEl(sec, "comingSoon", "bool", "Show only “Coming soon.” (the boxes below are kept for later)")));
+
+    main.append(h("hr"), h("h3", {}, `Boxes (${sec.items.length})`));
+    if (sec.items.some(i => i.type === "project")) main.append(h("p", { class: "sub" }, "Exploration boxes that follow each other are shown as one sideways-scrolling row of tall cards."));
+    // tick images, then combine them into one carousel
+    const picked = sec.items.filter(it => selected.has(it));
+    if (sec.items.some(it => it.type === "image")) {
+      main.append(h("div", { class: "combine" + (picked.length ? " on" : "") },
+        h("span", {}, picked.length ? `${picked.length} image${picked.length > 1 ? "s" : ""} selected` : "Tick images (☐) to combine them into a carousel."),
+        h("button", { class: "btn small", type: "button", disabled: picked.length < 2, onclick: () => {
+          const idx = picked.map(it => sec.items.indexOf(it)).sort((a, b) => a - b);
+          const first = sec.items[idx[0]];
+          const cz = { type: "carousel", span: Math.max(...picked.map(it => it.span || 2)), ratio: first.ratio || "4/3",
+                       slides: idx.map(k => ({ src: sec.items[k].src, alt: sec.items[k].alt || "", caption: sec.items[k].caption || "" })) };
+          for (const k of idx.slice().reverse()) sec.items.splice(k, 1);
+          sec.items.splice(idx[0], 0, cz);
+          selected.clear(); open.add(cz); setDirty(); render();
+          toast("Combined into a carousel — remember to Save.");
+        } }, "Combine into carousel"),
+        picked.length ? h("button", { class: "btn small", type: "button", onclick: () => { selected.clear(); renderMain(); } }, "Clear") : null));
+    }
+
+    sec.items.forEach((it, i) => {
+      const key = sec.id + ":" + i;
+      const T = TYPES[it.type] || { label: it.type, fields: [] };
+      const card = h("div", { class: "card" + (open.has(it) ? "" : " closed") + (selected.has(it) ? " picked" : "") });
+      const pick = it.type === "image" ? h("input", { type: "checkbox", class: "pick", title: "Select to combine into a carousel", checked: selected.has(it),
+        onclick: e => e.stopPropagation(),
+        onchange: e => { e.target.checked ? selected.add(it) : selected.delete(it); renderMain(); } }) : null;
+      const split = it.type === "carousel" ? h("button", { class: "icon", type: "button", title: "Split back into separate images", onclick: e => {
+        e.stopPropagation();
+        const imgs = (it.slides || []).map(sl => ({ type: "image", span: 2, ratio: it.ratio, src: sl.src, alt: sl.alt || "", caption: sl.caption || "" }));
+        sec.items.splice(i, 1, ...imgs); setDirty(); render();
+      } }, "⇹") : null;
+      const header = h("header", { onclick: () => { open.has(it) ? open.delete(it) : open.add(it); card.classList.toggle("closed"); } },
+        pick, h("span", { class: "chev" }, "▾"), h("span", { class: "badge" }, T.label), h("span", { class: "t" }, summary(it)), split,
+        ctl(sec.items, i, h("button", { class: "icon", type: "button", title: "Duplicate", onclick: e => {
+          e.stopPropagation(); const copy = JSON.parse(JSON.stringify(it)); sec.items.splice(i + 1, 0, copy); open.add(copy); setDirty(); render();
+        } }, "⧉")));
+      const grid = h("div", { class: "grid" }, T.fields.map(([k, kind, label]) =>
+        fieldEl(it, k, kind, label || k, () => { header.querySelector(".t").textContent = summary(it); })));
+      card.append(header, h("div", { class: "body" }, grid));
+      main.append(card);
+    });
+
+    const sel = h("select", {}, Object.entries(TYPES).map(([k, t]) => h("option", { value: k }, t.label)));
+    main.append(h("div", { class: "addbar" }, sel,
+      h("button", { class: "btn", onclick: () => {
+        const it = JSON.parse(JSON.stringify(BLANK[sel.value]));
+        sec.items.push(it); open.add(it); setDirty(); renderMain();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      } }, "+ Add box")));
+  }
+
+  function renderStatus() {
+    const st = $("#status");
+    st.textContent = backend ? backend.label : "Not connected — editing the published content";
+    st.classList.toggle("on", !!backend);
+    st.classList.toggle("dirty", dirty);
+    $("#save").disabled = !backend || !dirty;
+  }
+  function render() { renderNav(); renderMain(); renderStatus(); }
+
+  /* ======================================================================
+     Serialising content.js
+     ====================================================================== */
+  const HEADER = `/* =====================================================================
+   TURNING POINT — site content
+   Edited with admin/index.html — or by hand: it is plain JavaScript.
+   Box types: text, image, carousel, video, embed, project, event, credits, links
+   (see README.md). Paths are relative to index.html.
+   ===================================================================== */
+
+`;
+  const serialise = () => HEADER + "window.SITE = " + JSON.stringify(data, null, 2) + ";\n";
+  function parseContent(text) {
+    const w = {};
+    new Function("window", text + "\n;")(w);   // the site's own content file
+    if (!w.SITE || !Array.isArray(w.SITE.sections)) throw new Error("js/content.js does not define window.SITE");
+    return w.SITE;
+  }
+
+  /* ======================================================================
+     Backends: local folder (File System Access API) and GitHub
+     ====================================================================== */
+  let backend = null;
+
+  async function getHandle(dir, path, create) {
+    const parts = path.split("/").filter(Boolean);
+    const name = parts.pop();
+    for (const p of parts) dir = await dir.getDirectoryHandle(p, { create });
+    return { dir, name };
+  }
+
+  const localBackend = root => ({
+    label: `Folder: ${root.name}`,
+    async read(path) {
+      const { dir, name } = await getHandle(root, path, false);
+      return (await (await dir.getFileHandle(name)).getFile()).text();
+    },
+    async exists(path) {
+      try { const { dir, name } = await getHandle(root, path, false); await dir.getFileHandle(name); return true; } catch { return false; }
+    },
+    async write(path, content) {
+      const { dir, name } = await getHandle(root, path, true);
+      const fh = await dir.getFileHandle(name, { create: true });
+      const w = await fh.createWritable(); await w.write(content); await w.close();
+    }
+  });
+
+  const b64 = buf => {
+    let s = ""; const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  const githubBackend = ({ repo, branch, base, token }) => {
+    const shas = {};
+    const full = p => (base ? base.replace(/\/+$/, "") + "/" : "") + p;
+    const api = (p, opt = {}) => fetch(`https://api.github.com/repos/${repo}/contents/${full(p).split("/").map(encodeURIComponent).join("/")}${opt.method ? "" : `?ref=${encodeURIComponent(branch)}`}`, {
+      ...opt, headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", ...(opt.headers || {}) }
+    });
+    return {
+      label: `GitHub: ${repo}@${branch}`,
+      async read(path) {
+        const r = await api(path);
+        if (!r.ok) throw new Error(`GitHub ${r.status}: could not read ${full(path)}`);
+        const j = await r.json(); shas[path] = j.sha;
+        return new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g, "")), c => c.charCodeAt(0)));
+      },
+      async exists(path) { const r = await api(path); if (r.ok) { shas[path] = (await r.json()).sha; } return r.ok; },
+      async write(path, content) {
+        const body = typeof content === "string" ? b64(new TextEncoder().encode(content)) : b64(await content.arrayBuffer());
+        if (!(path in shas)) await this.exists(path);
+        const r = await api(path, { method: "PUT", body: JSON.stringify({ message: `Update ${path} from the editor`, content: body, branch, sha: shas[path] }) });
+        if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json().catch(() => ({}))).message || "could not save"} (${full(path)})`);
+        shas[path] = (await r.json()).content.sha;
+      }
+    };
+  };
+
+  async function connect(be) {
+    try {
+      const text = await be.read("js/content.js");
+      if (dirty && !confirm("Load the content from there? Your unsaved edits here will be replaced.")) { backend = be; renderStatus(); return; }
+      data = parseContent(text);
+      backend = be; dirty = false; open.clear();
+      render();
+      toast("Connected — " + be.label);
+    } catch (e) {
+      console.error(e);
+      toast(e.message || String(e), true);
+    }
+  }
+
+  $("#openFolder").addEventListener("click", async () => {
+    if (!window.showDirectoryPicker) return toast("Your browser can't open folders — use Chrome or Edge, or GitHub / Download instead.", true);
+    try {
+      const dir = await window.showDirectoryPicker({ id: "turning-point-site", mode: "readwrite" });
+      const be = localBackend(dir);
+      if (!(await be.exists("js/content.js"))) return toast("Choose the site folder — the one that contains index.html and js/content.js.", true);
+      await connect(be);
+    } catch (e) { if (e.name !== "AbortError") toast(e.message, true); }
+  });
+
+  const gh = $("#ghDialog");
+  $("#openGithub").addEventListener("click", () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("tp-github") || "{}");
+      if (saved.repo) { $("#ghRepo").value = saved.repo; $("#ghBranch").value = saved.branch || "main"; $("#ghBase").value = saved.base || ""; $("#ghToken").value = saved.token || ""; $("#ghRemember").checked = true; }
+    } catch {}
+    gh.showModal();
+  });
+  gh.addEventListener("close", async () => {
+    if (gh.returnValue !== "ok") return;
+    const cfg = { repo: $("#ghRepo").value.trim().replace(/^https:\/\/github\.com\//, "").replace(/\/$/, ""), branch: $("#ghBranch").value.trim() || "main", base: $("#ghBase").value.trim(), token: $("#ghToken").value.trim() };
+    if (!cfg.repo || !cfg.token) return toast("Repository and token are both needed.", true);
+    try { if ($("#ghRemember").checked) localStorage.setItem("tp-github", JSON.stringify(cfg)); else localStorage.removeItem("tp-github"); } catch {}
+    await connect(githubBackend(cfg));
+  });
+
+  async function save() {
+    if (!backend) return toast("Open the site folder or connect GitHub first — or use Download.", true);
+    const btn = $("#save"); btn.disabled = true; btn.textContent = "Saving…";
+    try {
+      await backend.write("js/content.js", serialise());
+      setDirty(false);
+      toast(backend.label.startsWith("GitHub") ? "Saved to GitHub — the live site updates in about a minute." : "Saved to js/content.js");
+    } catch (e) { console.error(e); toast(e.message || String(e), true); }
+    btn.textContent = "Save"; renderStatus();
+  }
+  $("#save").addEventListener("click", save);
+  document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); } });
+
+  $("#download").addEventListener("click", () => {
+    const a = h("a", { href: URL.createObjectURL(new Blob([serialise()], { type: "text/javascript" })), download: "content.js" });
+    document.body.append(a); a.click(); a.remove();
+    toast("Downloaded — replace js/content.js in the site folder with it.");
+  });
+
+  $("#preview").addEventListener("click", () => {
+    try { localStorage.setItem("tp-draft", JSON.stringify(data)); }
+    catch { return toast("This browser blocked the preview storage.", true); }
+    window.open("../index.html?draft", "_blank");
+  });
+
+  /* uploads go to assets/uploads/<name> */
+  async function uploadFile(file) {
+    if (file.size > 25 * 1024 * 1024 && !confirm(`${file.name} is ${(file.size / 1048576).toFixed(0)} MB. Large files load slowly (and GitHub refuses files over 100 MB). Upload anyway?`)) return null;
+    const dot = file.name.lastIndexOf(".");
+    const stem = (dot > 0 ? file.name.slice(0, dot) : file.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "file";
+    const ext = dot > 0 ? file.name.slice(dot).toLowerCase() : "";
+    let path = `assets/uploads/${stem}${ext}`, n = 2;
+    while (await backend.exists(path)) path = `assets/uploads/${stem}-${n++}${ext}`;
+    toast(`Uploading ${file.name}…`);
+    try {
+      await backend.write(path, file);
+      blobs[path] = URL.createObjectURL(file);
+      toast(`Uploaded to ${path} — remember to Save.`);
+      return path;
+    } catch (e) { console.error(e); toast(e.message || String(e), true); return null; }
+  }
+
+  function mediaRatioFromPath(path) {
+    return new Promise(res => {
+      const i = new Image();
+      i.onload = () => res(i.naturalWidth && i.naturalHeight ? `${i.naturalWidth}/${i.naturalHeight}` : null);
+      i.onerror = () => res(null); i.src = resolve(path);
+    });
+  }
+
+  function mediaRatio(file) {
+    return new Promise(res => {
+      const url = URL.createObjectURL(file);
+      const done = (w, h) => res(w && h ? `${w}/${h}` : null);
+      if (file.type.startsWith("video")) {
+        const v = document.createElement("video"); v.preload = "metadata";
+        v.onloadedmetadata = () => done(v.videoWidth, v.videoHeight); v.onerror = () => done(); v.src = url;
+      } else {
+        const i = new Image(); i.onload = () => done(i.naturalWidth, i.naturalHeight); i.onerror = () => done(); i.src = url;
+      }
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

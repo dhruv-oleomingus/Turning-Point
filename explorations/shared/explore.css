@@ -1,0 +1,59 @@
+/* Shared shell for the interactive explorations.
+   Each exploration is its own folder with an index.html that links this file. */
+:root {
+  --m: clamp(16px, 1.9vw, 56px);
+  --ink: #1f1c19; --grey: #5d5853; --soft: #8d857d; --dim: #d9d0c6;
+  --gold: #a9844f; --rust: #bf6a33; --line: rgba(31, 28, 25, .14);
+  --sans: "Source Sans 3", Calibri, Carlito, "Segoe UI", system-ui, sans-serif;
+  --serif: "Cormorant Garamond", Georgia, serif;
+  --small: clamp(11px, .45rem + .3vw, 14px);
+  --ease: cubic-bezier(.65, .02, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #fff; color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+.xbar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 10;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1em;
+  padding: calc(var(--m) * .9) var(--m);
+  font-size: var(--small); letter-spacing: .16em; text-transform: uppercase;
+  pointer-events: none;
+}
+.xbar > * { pointer-events: auto; }
+.xbar .back { color: var(--gold); }
+.xbar .back .arrow { display: inline-block; transition: transform .5s var(--ease); }
+.xbar .back:hover .arrow { transform: translateX(-.4em); }
+.xbar .name { color: var(--grey); }
+.xbar .name em { font-family: var(--serif); font-size: 1.5em; letter-spacing: 0; text-transform: none; color: var(--gold); margin-right: .4em; }
+.xbar button { font: inherit; letter-spacing: inherit; text-transform: inherit; background: none; border: 0; padding: 0; color: var(--grey); cursor: pointer; }
+.xbar button:hover, .xtools button:hover { color: var(--rust); }
+
+.xinfo {
+  position: fixed; z-index: 9; top: calc(var(--m) * 3); right: var(--m);
+  width: min(380px, calc(100vw - 2 * var(--m)));
+  padding: 1.2em 1.3em; background: rgba(255, 255, 255, .95);
+  border-top: 1px solid var(--line);
+  font-size: clamp(15px, .6rem + .5vw, 19px); line-height: 1.45; color: var(--grey);
+  opacity: 0; transform: translateY(-8px); pointer-events: none;
+  transition: opacity .5s var(--ease), transform .6s var(--ease);
+}
+.xinfo.is-open { opacity: 1; transform: none; pointer-events: auto; }
+.xinfo p { margin: 0 0 .8em; }
+
+.xtools {
+  position: fixed; z-index: 10; left: 0; right: 0; bottom: 0;
+  display: flex; justify-content: center; gap: 2.2em; flex-wrap: wrap;
+  padding: var(--m) var(--m) calc(var(--m) + env(safe-area-inset-bottom));
+  font-size: var(--small); letter-spacing: .16em; text-transform: uppercase;
+}
+.xtools button { font: inherit; letter-spacing: inherit; text-transform: inherit; background: none; border: 0; padding: .3em 0; color: var(--soft); cursor: pointer; position: relative; }
+.xtools button.is-on { color: var(--rust); }
+.xtools button.is-on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; }
+
+.xhint {
+  position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none;
+  font-size: clamp(13px, 1vw, 16px); letter-spacing: .2em; text-transform: uppercase; color: var(--soft);
+  transition: opacity 1s var(--ease);
+}
+.xhint.is-gone { opacity: 0; }

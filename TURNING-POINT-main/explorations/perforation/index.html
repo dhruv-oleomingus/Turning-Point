@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Perforation — Turning Point</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/explore.css">
+  <style>
+    #field { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+  </style>
+</head>
+<body>
+  <canvas id="field" aria-label="Interactive reaction–diffusion field. Drag to seed growth."></canvas>
+
+  <header class="xbar">
+    <a class="back" href="../../index.html#explore"><span class="arrow">←</span> Turning Point</a>
+    <span class="name"><em>05</em>Perforation</span>
+    <button type="button" id="infoBtn" aria-expanded="false" aria-controls="info">About</button>
+  </header>
+
+  <aside class="xinfo" id="info">
+    <p>The columns of Turning Point are cut with patterns grown by a reaction–diffusion process — two simulated substances, one feeding and one consuming the other, settling into stripes, labyrinths and spots.</p>
+    <p>Touch or drag across the surface to seed growth. Wherever the pattern takes hold, steel appears; wherever it peaks, the steel is cut away.</p>
+  </aside>
+
+  <nav class="xtools" aria-label="Growth">
+    <button type="button" data-bias="-0.6">Lines</button>
+    <button type="button" data-bias="0" class="is-on">Mixed</button>
+    <button type="button" data-bias="0.7">Cells</button>
+    <button type="button" id="clear">Clear</button>
+  </nav>
+
+  <p class="xhint" id="hint">touch to grow</p>
+
+  <script src="../../js/rd.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    const canvas = document.getElementById("field");
+    const rd = new TurningPattern(canvas, { texture: "../../assets/img/texture.jpg", texturePx: 760, seed: 11 });
+    if (!rd.ok) { document.getElementById("hint").textContent = "This piece needs WebGL2"; return; }
+
+    const mobile = matchMedia("(max-width: 820px)").matches;
+    const cell = mobile ? 2 : 2.6;
+    rd.start(Math.min(720, Math.ceil(innerWidth / cell)), Math.min(720, Math.ceil(innerHeight / cell)), cell);
+    rd.resize();
+
+    // a small opening spiral so the page is never empty
+    for (let i = 0; i < 18; i++) {
+      const a = i * 0.7, r = i * 3.2;
+      rd.seed(rd.W / 2 + Math.cos(a) * r, rd.H / 2 + Math.sin(a) * r, 2.4);
+    }
+
+    let down = false, lastP = null;
+    const hint = document.getElementById("hint");
+    function seedAt(e) {
+      const x = e.clientX / cell, y = e.clientY / cell;
+      if (lastP) {   // fill the gap between pointer events
+        const dx = x - lastP[0], dy = y - lastP[1], d = Math.hypot(dx, dy), n = Math.min(8, Math.ceil(d / 4));
+        for (let i = 1; i <= n; i++) rd.seed(lastP[0] + dx * i / n, lastP[1] + dy * i / n, 2.6);
+      } else rd.seed(x, y, 3);
+      lastP = [x, y];
+      hint.classList.add("is-gone");
+    }
+    canvas.addEventListener("pointerdown", e => { down = true; lastP = null; canvas.setPointerCapture(e.pointerId); seedAt(e); });
+    canvas.addEventListener("pointermove", e => { if (down) seedAt(e); });
+    addEventListener("pointerup", () => { down = false; lastP = null; });
+
+    document.querySelectorAll("[data-bias]").forEach(b => b.addEventListener("click", () => {
+      document.querySelectorAll("[data-bias]").forEach(o => o.classList.toggle("is-on", o === b));
+      rd.buildParams({ dotBias: parseFloat(b.dataset.bias) });
+    }));
+    document.getElementById("clear").addEventListener("click", () => rd.clear());
+
+    const info = document.getElementById("info"), infoBtn = document.getElementById("infoBtn");
+    infoBtn.addEventListener("click", () => {
+      const open = info.classList.toggle("is-open");
+      infoBtn.setAttribute("aria-expanded", open);
+      infoBtn.textContent = open ? "Close" : "About";
+    });
+
+    addEventListener("resize", () => rd.resize());
+    function frame() {
+      if (!document.hidden) {
+        rd.step(14);
+        rd.render([{ x: 0, y: 0, w: innerWidth, h: innerHeight }], { fill: 0 });
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>

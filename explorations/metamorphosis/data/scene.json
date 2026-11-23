@@ -1,0 +1,55 @@
+{
+  "periodM": 13.2,
+  "lock": {
+    "centreBlender": [
+      -1.1345,
+      1.5295,
+      3.45
+    ],
+    "viewDirBlender": [
+      -0.7071,
+      -0.7071,
+      -0.0
+    ],
+    "rightBlender": [
+      -0.7071,
+      0.7071,
+      0.0
+    ],
+    "headingDeg": 45.0
+  },
+  "viewCentreY": 6.6,
+  "bloom": {
+    "domain": {
+      "widthM": 12.0014,
+      "heightM": 8.4034,
+      "px": [
+        3976,
+        2784
+      ]
+    },
+    "fieldPx": [
+      1988,
+      1392
+    ],
+    "sdfRangeMm": 24.0,
+    "arrivalSpanM": 5.5641,
+    "nucleationMm": 16.12,
+    "nucleationGapMm": 9.92
+  },
+  "handoff": {
+    "sizeM": 2.0012
+  },
+  "chapters": {
+    "bark": {
+      "N": 2560,
+      "windowPx": 633,
+      "canvasM": 8.0935
+    },
+    "watercolour": {
+      "N": 2560,
+      "windowPx": 633,
+      "canvasM": 8.0935
+    }
+  }
+}
