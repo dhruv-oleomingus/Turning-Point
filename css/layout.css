@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-24 10:26).
+   css/layout.css — written by admin/layout.html (2026-11-24 10:22).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -55,7 +55,7 @@
     max-width: none;
     width: calc(6 * var(--u));
     height: calc(1.5 * var(--u));
-    margin: 0 0 var(--u);
+    margin: 0 0 calc(.5 * var(--u));
     font-size: calc(.298 * var(--u));
     line-height: 1.2;
     font-family: var(--display);
@@ -99,9 +99,9 @@
     color: var(--accent);
     text-align: left;
   }
-  .nav {   /* Menu: columns 12–14, rows 6–7 */
+  .nav {   /* Menu: columns 12–14, rows 6–8 */
     left: 0;
-    top: calc(5 * var(--u));
+    top: calc(5.64 * var(--u));
     width: calc(3 * var(--u));
     font-size: calc(.35 * var(--u));
   }
@@ -136,19 +136,19 @@
     width: calc(2.25 * var(--u));
     height: var(--u);
   }
-  .frame > .xpat[data-pa="home:e10ndl"] {   /* Pattern area: columns 14–15, rows 8 (pattern area) */
+  .frame > .xpat[data-pa="home:e10ndl"] {   /* Pattern area: columns 14, rows 8 (pattern area) */
     display: block;
     left: calc(var(--pl) + 13 * var(--u));
     top: calc(var(--mt) + 7 * var(--u));
-    width: calc(2 * var(--u));
+    width: var(--u);
     height: var(--u);
   }
-  .frame > .xpat[data-pa="home:e116ui"] {   /* Pattern area: columns 1–7, rows 1–2 (pattern area) */
+  .frame > .xpat[data-pa="home:e116ui"] {   /* Pattern area: columns 1–10, rows 1 (pattern area) */
     display: block;
     left: var(--pl);
     top: var(--mt);
-    width: calc(6.25 * var(--u));
-    height: calc(1.25 * var(--u));
+    width: calc(10 * var(--u));
+    height: var(--u);
   }
 
   /* ---------- Section (Credits)  (index.html#credits) ---------- */

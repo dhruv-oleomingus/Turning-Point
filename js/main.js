@@ -140,7 +140,8 @@
     const host = mobile ? stage : frame;
     if (canvas.parentNode !== host) host.prepend(canvas);
     if (bgEl && bgEl.nextElementSibling !== canvas) host.insertBefore(bgEl, canvas);   // the layer behind sits under the canvas
-    const n = mobile ? N_MOBILE : N_DESKTOP;
+    // rows of the main pattern: set in the layout editor (--tp-rows), 7 by default
+    const n = mobile ? N_MOBILE : clamp(Math.round(TP_TILES.fromStyle(stage, "stage").rows) || N_DESKTOP, 2, 14);
     if (n !== S.strips.length) {
       const p = (!mobile && current) ? 1 : 0;
       S.strips = makeStrips(n, p);
@@ -193,139 +194,19 @@
     return { x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height };
   }
 
-  /* The rows are cut into blocks on a grid of squares: squares, 2 × 2 squares, rectangles
-     (two squares across or down) and L shapes (three squares, over two rows),
-     with no gaps between them. Every square is subdivided into TILE_SUB ×
-     TILE_SUB smaller squares, and TILE_EMPTY of those are left out: bitten out
-     of the area's edges, bar a few in the middle (shapeMask). Blocks are the steel texture at different zooms (above 1 =
-     the pattern drawn smaller, so denser), except two drawn as ink outlines.
-     Each block travels its own distance with the mouse (k). On wide screens
-     two more blocks step out of the column to the right: an outline block
-     beside the top row and a steel block beside the second-last row (the
-     intro text wraps round them). The right-hand strip is cut the same way.
-     The plan is drawn anew on each visit and then stays put. */
-  const TILE_ZOOMS = [1, 1, 1, 1.5, 2, 2.4];
+  /* The pattern areas are cut into squares by js/tiles.js (shared with the layout editor), each by
+     the settings it carries in css/layout.css: steel, outlines or a mix; how many small squares are
+     left empty and where; the shapes of the blocks; the scale; a new arrangement on each visit or a
+     fixed one. With no settings, each kind of area keeps its defaults (TP_TILES.DEFAULTS). */
   const TILE_GAP = 0;                                     // gaps between blocks, × the original row gap
-  const TILE_SUB = 2;                                     // each square → TILE_SUB × TILE_SUB smaller squares
-  const TILE_EMPTY = .48;                                 // share of the smaller squares left empty (the mockup: about half)
-  const TILE_INNER = [3, 6];
-  const SLIVER_EMPTY = .25;                               // share of the right-hand strip's small squares left empty                              // how many of those sit in the middle (min, max); the rest bite into the edges
-  const PLAN_SEED = (Math.random() * 4294967296) >>> 0;   // a new arrangement on each visit
-  const planRng = key => {
-    let s = PLAN_SEED;
-    for (const ch of key) s = (Math.imul(s ^ ch.charCodeAt(0), 2654435761) + 1013904223) >>> 0;
-    return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
-  };
-  // which of a block part's smaller squares are kept: exactly TILE_EMPTY of them go
-  function holes(R, cols, rows, share = TILE_EMPTY) {
-    const n = cols * rows, keep = new Array(n).fill(true), idx = [...Array(n).keys()];
-    for (let i = n - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
-    for (let i = 0; i < Math.round(n * share); i++) keep[idx[i]] = false;
-    return keep;
-  }
-  /* The pattern area's outline: the empty squares are bitten out of its edges,
-     each bite likelier beside an earlier one and unlikelier the deeper it goes,
-     so the area takes a different ragged shape each visit; TILE_INNER more are
-     scattered singly in the middle. Returns rows of booleans: true = kept. */
-  function shapeMask(R, cols, rows) {
-    const keep = Array.from({ length: rows }, () => new Array(cols).fill(true));
-    const depth = (i, j) => Math.min(i, j, cols - 1 - i, rows - 1 - j);
-    const gone = (i, j) => i < 0 || j < 0 || i >= cols || j >= rows || !keep[j][i];
-    const total = Math.round(cols * rows * TILE_EMPTY);
-    const inner = Math.min(total, TILE_INNER[0] + Math.floor(R() * (TILE_INNER[1] - TILE_INNER[0] + 1)));
-    for (let k = 0; k < total - inner; k++) {
-      let sum = 0; const cand = [];
-      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-        if (!keep[j][i]) continue;
-        const open = gone(i - 1, j) + gone(i + 1, j) + gone(i, j - 1) + gone(i, j + 1);
-        if (!open) continue;                              // only squares on the current outline
-        const w = (1 + open) / Math.pow(1 + depth(i, j), 2.2);
-        cand.push([i, j, w]); sum += w;
-      }
-      let x = R() * sum, pick = cand[cand.length - 1];
-      for (const c of cand) { x -= c[2]; if (x <= 0) { pick = c; break; } }
-      keep[pick[1]][pick[0]] = false;
-    }
-    // a few holes in the middle, apart from each other and from the bites: a small square,
-    // or now and then a whole module (TILE_SUB × TILE_SUB of them)
-    const deep = Math.max(2, Math.floor(Math.min(cols, rows) / 4));
-    for (let k = 0, tries = 0; k < inner && tries < 400; tries++) {
-      const big = R() < .4, s = big ? TILE_SUB : 1;
-      let i = Math.floor(R() * cols), j = Math.floor(R() * rows);
-      if (big) { i -= i % TILE_SUB; j -= j % TILE_SUB; }
-      if (depth(i, j) < deep || depth(i + s - 1, j + s - 1) < deep - 1) continue;
-      let clear = true;
-      for (let b = -1; b <= s; b++) for (let a = -1; a <= s; a++) if (gone(i + a, j + b)) clear = false;
-      if (!clear) continue;
-      for (let b = 0; b < s; b++) for (let a = 0; a < s; a++) keep[j + b][i + a] = false;
-      k++;
-    }
-    return keep;
-  }
-  const withHoles = (R, q) => Object.assign(q, { keep: holes(R, q.cw * TILE_SUB, q.rh * TILE_SUB) });
-  const gridPlans = {};
-  function gridPlan(rows, units, extras, seed) {
-    const key = rows + ":" + units + ":" + extras + (seed ? ":" + seed : "");
-    if (gridPlans[key]) return gridPlans[key];
-    const R = planRng("grid" + key);
-    const used = Array.from({ length: rows }, () => new Array(units).fill(false));
-    const free = (r, c) => r >= 0 && r < rows && c >= 0 && c < units && !used[r][c];
-    const H = (c, r) => ({ c, r, cw: 2, rh: 1 }), V = (c, r) => ({ c, r, cw: 1, rh: 2 }), Q = (c, r) => ({ c, r, cw: 1, rh: 1 });
-    const blocks = [];
-    for (let r = 0; r < rows; r++) for (let c = 0; c < units; c++) {
-      if (!free(r, c)) continue;
-      const right = free(r, c + 1), down = free(r + 1, c), x = R();
-      let parts = null;
-      if (x < .14 && right && down && free(r + 1, c + 1)) parts = [{ c, r, cw: 2, rh: 2 }];   // 2 × 2
-      if (!parts && x < .3) {                             // L shapes, whichever way fits
-        const fits = [];
-        if (right && down) fits.push([H(c, r), V(c, r)]);
-        if (right && free(r + 1, c + 1)) fits.push([H(c, r), V(c + 1, r)]);
-        if (down && free(r + 1, c + 1)) fits.push([V(c, r), H(c, r + 1)]);
-        if (down && free(r + 1, c - 1)) fits.push([V(c, r), H(c - 1, r + 1)]);
-        if (fits.length) parts = fits[Math.floor(R() * fits.length)];
-      }
-      if (!parts && x < .52 && right) parts = [H(c, r)];
-      if (!parts && x < .62 && down) parts = [V(c, r)];
-      if (!parts) parts = [Q(c, r)];
-      for (const q of parts) for (let i = 0; i < q.cw; i++) for (let j = 0; j < q.rh; j++) used[q.r + j][q.c + i] = true;
-      const zoom = TILE_ZOOMS[Math.floor(R() * TILE_ZOOMS.length)];
-      blocks.push({ row: r, parts, style: 0, zoom, k: (.55 + R() * 1.1) / Math.sqrt(zoom) });
-    }
-    // which smaller squares are empty: decided over the whole area, not block by block
-    const mask = shapeMask(R, units * TILE_SUB, rows * TILE_SUB);
-    for (const b of blocks) for (const q of b.parts) {
-      const cols = q.cw * TILE_SUB, rws = q.rh * TILE_SUB;
-      q.keep = Array.from({ length: cols * rws }, (_, t) => mask[q.r * TILE_SUB + Math.floor(t / cols)][q.c * TILE_SUB + t % cols]);
-    }
-    // a few blocks drawn as ink outlines (about one in five, as in the mockup)
-    const outlines = seed ? Math.round(blocks.length * .2) : clamp(Math.round(blocks.length * .2), 2, 5), pick = [...blocks.keys()];
-    for (let i = 0; i < outlines && pick.length; i++) {
-      const b = blocks[pick.splice(Math.floor(R() * pick.length), 1)[0]];
-      b.style = 1; b.zoom = Math.min(b.zoom, 1.5);       // fine outlines turn to noise when very small
-    }
-    if (extras) {
-      // dx: these sit past the simulated area's edge, where the pattern is sparse, so
-      // they borrow the pattern from inside the column (dx, dy: fractions of its size)
-      blocks.push({ row: 0, parts: [withHoles(R, Q(units, 0))], style: 1, zoom: 1.5, k: .8, dx: -.55, dy: .5 });
-      blocks.push({ row: rows - 2, parts: [withHoles(R, Q(units, rows - 2))], style: 0, zoom: 1.5, k: 1.25, dx: -.4 });
-    }
-    return (gridPlans[key] = blocks);
-  }
+  const TILE_SUB = TP_TILES.SUB;                          // each square → TILE_SUB × TILE_SUB smaller squares
   const STEP_OUT = false;
-  const gridUnits = (w, h, gap) => clamp(Math.round((w + gap) / (h + gap)), 2, 8);
-  // the right-hand strip: each row is a run of squares, subdivided and thinned the same way
-  const sliverPlans = {};
-  function sliverPlan(rows, units) {
-    const key = rows + ":" + units;
-    if (sliverPlans[key]) return sliverPlans[key];
-    const R = planRng("sliver" + key);
-    return (sliverPlans[key] = Array.from({ length: rows }, () => holes(R, units * TILE_SUB, TILE_SUB, SLIVER_EMPTY)));
-  }
+  const gridUnits = (w, h, gap) => clamp(Math.round((w + gap) / (h + gap)), 1, 24);   // squares across the main area (same in the editor)
   // push one part as its kept smaller squares
   // clip: [left, right] edges beyond which nothing is drawn (the active area)
   // keepOut: rectangles (canvas px) left clear for the logos; sx: how far the row has slid
   let keepOut = [];
+  let sliverHome = null;   // the strip's settings on the home page, kept while a section is open
   function pushSub(rects, x, y, w, h, keep, cols, rows, base, clip, sx = 0) {
     const cw = w / cols, ch = h / rows;
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
@@ -370,18 +251,31 @@
       }
     } else {
       const sv = relRect(sliver);
-      const su = Math.max(1, Math.round(sv.w / sh)), plan = sliverPlan(n, su);
+      const su = Math.max(1, Math.round(sv.w / sh));
       clip = [Math.round(home.x), Math.round(sv.x + sv.w)];   // rows sliding away are cut at the active area's edges
       for (let i = 0; i < n; i++) {
         const d = i - mid, y = home.y + i * (sh + gapPx);
         // the strip starts a row lower (row 3 of the grid); its outline square sits at the top, by the links
         // in a section the strip turns to black outlines, row by row as the rows slide away
         // a row of the strip is drawn where the strip (.sliver) covers that row (css/layout.css can move it)
-        if (y + sh / 2 > sv.y && y + sh / 2 < sv.y + sv.h) pushSub(sliverRects, sv.x, y, sv.w, sh, plan[i], su * TILE_SUB, TILE_SUB, { ox: oxSliver(d), oy: -home.y, style: S.strips[i].p > .5 ? 1 : 0 });
         const p = easeInOut(S.strips[i].p);
         // the plate slides out to the left, carrying its pattern with it
         const shift = p * (home.w + sh + 60);
         rows.push({ y, h: sh, shift, ox: oxHome(d) + shift, oy: -home.y + py * (1 - p), m: 1 - p, on: p <= .999 });
+      }
+      // the strip, cut by its own settings. In a section it takes that page's settings (outlines, by
+      // default), row by row as the rows slide away; it is drawn where .sliver covers the rows
+      const inPanel = root.classList.contains("is-panel");
+      const sp = TP_TILES.fromStyle(sliver, inPanel ? "stripSection" : "strip");
+      if (!inPanel) sliverHome = sp;
+      const sPlan = q => TP_TILES.plan(Object.assign({}, q, { rows: n, cols: su, key: "sliver" })), scw = sv.w / su;
+      for (const [plan, section] of [[sPlan(sliverHome || TP_TILES.DEFAULTS.strip), false], [sPlan(sp), true]]) for (const b of plan) for (const q of b.parts) {
+        const a = q.r, z = q.r + q.rh - 1;
+        if ((S.strips[a].p > .5) !== section) continue;
+        const ya = home.y + a * (sh + gapPx), yz = home.y + z * (sh + gapPx);
+        if (!(ya + sh / 2 > sv.y && yz + sh / 2 < sv.y + sv.h)) continue;
+        pushSub(sliverRects, sv.x + q.c * scw, ya, q.cw * scw, yz + sh - ya, q.keep, q.cw * TILE_SUB, q.rh * TILE_SUB,
+          { ox: oxSliver(a - mid), oy: -home.y, style: b.style, zoom: b.zoom });
       }
     }
     if (!mobile && markEl) {
@@ -405,7 +299,7 @@
       if (y1 >= home.y + home.h - 1) y1 = home.y + home.h + 1;
       if (x1 > x0 && y1 > y0) keepOut.push({ x0, x1, y0, y1 });
     }
-    for (const b of gridPlan(n, units, false)) {   // (true: two blocks step out of the column, the old layout)
+    for (const b of TP_TILES.plan(Object.assign({}, TP_TILES.fromStyle(stage, "stage"), { rows: n, cols: units, key: "stage" }))) {
       const row = rows[b.row];                   // a block moves with the row it starts in
       if (!row.on) continue;
       for (const q of b.parts) {
@@ -430,7 +324,7 @@
         if (!row.on) continue;
         m = row.m; shift = (1 - m) * (r.x + r.w - home.x + 60);
       }
-      for (const b of gridPlan(rws, cols, false, pe.dataset.pa)) for (const q of b.parts)
+      for (const b of TP_TILES.plan(Object.assign({}, TP_TILES.fromStyle(pe, "area"), { rows: rws, cols, key: pe.dataset.pa }))) for (const q of b.parts)
         pushSub(rects, r.x + q.c * cw - shift, r.y + q.r * ch, q.cw * cw - gapPx, q.rh * ch - gapPx, q.keep, q.cw * TILE_SUB, q.rh * TILE_SUB,
           { ox: oxHome(0) + shift + px * m * (b.k - 1), oy: -home.y + py * m * (b.k - 1), style: b.style, zoom: b.zoom }, isHome ? clip : null, shift);
     }

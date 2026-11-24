@@ -123,6 +123,11 @@
   .t-strip .body { background: url(../assets/img/texture-blue.jpg) center / cover, #9dbfd8; }
   .t-strip.v-outline .body { background: none; }
   .t-strip .body .ph { white-space: normal; font-size: 11px; width: 90%; }
+  .body:has(> canvas.tiles) { background: none !important; box-shadow: none !important; }
+  canvas.tiles { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .row[hidden], #iPatBox[hidden] { display: none; }
+  .row output { font-size: 11px; color: var(--grey); min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+  .row input[type=range] { width: 100%; min-width: 0; }
   .t-image .body, .t-card .media { background: var(--ph-bg); }
   .t-image .body svg, .t-card .media svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .t-image .body .ph { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font: 600 13px/1.3 var(--ui); color: #fff; white-space: nowrap; }
@@ -341,9 +346,22 @@
         <div class="row"><label for="iTtlSize">Title size</label><span class="unit"><input type="number" id="iTtlSize" step=".01"><span>u</span></span></div>
       </div>
 
+      <div id="iPatBox">
+        <h4>Pattern</h4>
+        <div class="row"><label for="tpDraw">Draw as</label><select id="tpDraw"><option value="fill">steel</option><option value="outline">outlines</option><option value="mix">a mix</option></select></div>
+        <div class="row" id="tpOutRow"><label for="tpOutlines" title="Share of the blocks drawn as outlines">Outlined blocks</label><span class="unit"><input type="range" id="tpOutlines" min="0" max="1" step=".05"><output id="tpOutlinesV"></output></span></div>
+        <div class="row"><label for="tpEmpty" title="Share of the small squares left empty">Empty squares</label><span class="unit"><input type="range" id="tpEmpty" min="0" max=".9" step=".01"><output id="tpEmptyV"></output></span></div>
+        <div class="row"><label for="tpHoles">… taken</label><select id="tpHoles"><option value="edges">from the edges</option><option value="scatter">anywhere</option></select></div>
+        <div class="row"><label for="tpBlocks" title="How the squares are grouped; each block has its own scale and pattern">Blocks</label><select id="tpBlocks"><option value="mixed">mixed shapes</option><option value="squares">single squares</option><option value="rows">one per row</option><option value="one">one block</option></select></div>
+        <div class="row"><label for="tpScale" title="How large the pattern is drawn in each block">Pattern scale</label><select id="tpScale"><option value="varied">varied</option><option value="1">1×</option><option value="1.5">1.5× finer</option><option value="2">2× finer</option><option value="2.4">2.4× finer</option></select></div>
+        <div class="row" id="tpRowsRow"><label for="tpRows" title="The main pattern is cut into this many rows; they slide away one by one">Rows</label><input type="number" id="tpRows" min="2" max="14" step="1"></div>
+        <div class="row"><label for="tpFixed">Arrangement</label><select id="tpFixed"><option value="visit">new each visit</option><option value="fixed">fixed</option></select></div>
+        <div class="row" id="tpSeedRow"><label for="tpSeed">Arrangement no.</label><span class="unit"><input type="number" id="tpSeed" min="1" step="1"><button class="btn small" id="tpShuffle" type="button" title="Another arrangement">↻</button></span></div>
+        <p class="note" id="tpNote"></p>
+      </div>
+
       <h4>More</h4>
       <div class="row"><label for="iRatio" title="Keep the shape while resizing, e.g. 5/7, 16/9, 2.5 — blank for free">Keep ratio</label><input type="text" id="iRatio" placeholder="free"></div>
-      <div class="row" id="iVarRow"><label for="iVar">Draw as</label><select id="iVar"><option value="fill">steel</option><option value="outline">outlined squares</option></select></div>
       <div class="row"><label for="iSel">CSS selector</label><input type="text" id="iSel" placeholder="(none)"></div>
       <div class="row"><label for="iParent">Placed inside</label><select id="iParent"></select></div>
       <p class="note">Selector and container only shape the CSS that Export writes.</p>
@@ -371,6 +389,7 @@
 </dialog>
 <div class="toast" id="toast"></div>
 
+<script src="../js/tiles.js"></script>
 <script>
 (function () {
 "use strict";
@@ -399,7 +418,14 @@ function domContainer(e, p) {
   // no column in the console: the site's own (style.css) is where the default puts it
   return want === ".frame > .side" ? Object.assign(E("area", "Right column (.side)", 11, 0, 3, 8, { sel: want }), { id: "_side" }) : null;
 }
-const STRUCTURAL = /^\.frame > \.(side|panel)\b/;   // these hold other parts: move or hide them, don't delete them
+const STRUCTURAL = /^\.frame > \.(side|panel)\b/;
+/* pattern settings (js/tiles.js): each pattern area and strip carries them as e.tp */
+function tpKind(e, p) { return e.type === "strip" ? ((p.kind || p.id) === "home" ? "strip" : "stripSection") : e.sel === ".frame > .stage" ? "stage" : "area"; }
+function ensureTp(e, p) {
+  if ((e.type !== "pattern" && e.type !== "strip") || e.tp) return;
+  e.tp = Object.assign({}, TP_TILES.DEFAULTS[tpKind(e, p)]);
+  if (e.type === "strip" && e.variant) e.tp.draw = e.variant === "outline" ? "outline" : "fill";   // the old "Draw as"
+}   // these hold other parts: move or hide them, don't delete them
 function strip(outline) { return E("strip", "Pattern strip", 14, 2, 1, 6, { sel: ".sliver", variant: outline ? "outline" : "fill" }); }
 
 const DEFAULT_PAGES = () => [
@@ -475,6 +501,7 @@ function withIds(pages) {
   }));
   // parts that live inside the column or a panel on the site are always placed inside it here too
   pages.forEach(p => p.els.forEach(e => { const c = domContainer(e, p); if (c && c.id !== "_side") e.parent = c.id; }));
+  pages.forEach(p => p.els.forEach(e => ensureTp(e, p)));
   return pages;
 }
 
@@ -633,8 +660,7 @@ function renderEls() {
     d.dataset.id = e.id;
     place(d, e, m);
     let body = "";
-    if (e.type === "pattern") body = `<span class="ph">${esc(e.label)}<small>indicative area</small></span>`;
-    else if (e.type === "strip") body = "";
+    if (e.type === "pattern" || e.type === "strip") body = `<canvas class="tiles"></canvas>`;
     else if (e.type === "image") body = CROSS + `<span class="ph">${esc(e.label)}</span>`;
     else if (e.type === "logo") body = `<img src="${esc(e.src || "../assets/img/anu-logo.png")}" alt="">`;
     else if (e.type === "text") {
@@ -644,12 +670,7 @@ function renderEls() {
              `<div class="ttl" style="font-size:${(e.ttlSize || .42) * m.uw}px">${esc(e.ttl)}</div>`;
     }
     d.innerHTML = `<div class="body"${e.type === "text" ? ` style="${fontCss(e, m)}"` : ""}>${body}</div><span class="tag">${esc(e.label)}</span>`;
-    if (e.type === "strip" && e.variant === "outline") {
-      d.querySelector(".body").style.backgroundImage =
-        `linear-gradient(to right, var(--ink) 1px, transparent 1px), linear-gradient(to bottom, var(--ink) 1px, transparent 1px)`;
-      d.querySelector(".body").style.backgroundSize = `${m.uw}px ${m.uh}px`;
-      d.querySelector(".body").style.boxShadow = "inset -1px -1px 0 var(--ink)";
-    }
+    if (e.tp) drawTiles(d.querySelector("canvas.tiles"), e, p, m);
     d.querySelector(".tag").style.transform = `scale(${1 / scale})`;
     const ph = d.querySelector(".ph"); if (ph) ph.style.zoom = 1 / scale;
     if (e.id === selId && !e.locked) {
@@ -664,6 +685,44 @@ function renderEls() {
     els.appendChild(d);
   });
   checkOverflow();
+}
+/* the pattern areas as the site cuts them (js/tiles.js): steel squares show the texture,
+   outline squares are hatched, empty ones are left blank */
+const TEX = new Image(); TEX.src = "../assets/img/texture-blue.jpg"; TEX.onload = () => renderEls();
+function stageEl() { const h = S.pages.find(q => (q.kind || q.id) === "home"); return h && h.els.find(o => o.sel === ".frame > .stage" && !o.hidden); }
+function tileGeom(e, p) {   // the same sums as js/main.js, in modules
+  const st = stageEl(); if (!st) return null;
+  const rows = Math.max(2, Math.min(14, Math.round((st.tp && st.tp.rows) || 7))), sh = st.h / rows;
+  const scols = Math.max(1, Math.min(24, Math.round(st.w / sh))), unit = st.w / scols;
+  if (e === st) return { rows, cols: scols, cw: unit, ch: sh, y0: 0, key: "stage" };
+  if (e.type === "strip") {
+    const su = Math.max(1, Math.round(e.w / sh)), vis = new Set();
+    for (let i = 0; i < rows; i++) { const cy = st.y + (i + .5) * sh; if (cy > e.y && cy < e.y + e.h) vis.add(i); }
+    return { rows, cols: su, cw: e.w / su, ch: sh, y0: st.y - e.y, key: "sliver", vis };
+  }
+  const cols = Math.max(1, Math.round(e.w / unit)), r = Math.max(1, Math.round(e.h / unit));
+  return { rows: r, cols, cw: e.w / cols, ch: e.h / r, y0: 0, key: pageKey(p) + ":" + e.id };
+}
+function drawTiles(cv, e, p, m) {
+  const g = tileGeom(e, p); if (!cv || !g) return;
+  const k = Math.min(3, (window.devicePixelRatio || 1) * scale), ux = m.uw * k, uy = m.uh * k;
+  cv.width = Math.max(1, Math.round(e.w * ux)); cv.height = Math.max(1, Math.round(e.h * uy));
+  const c = cv.getContext("2d"), sub = TP_TILES.SUB, steel = new Path2D(), ink = new Path2D();
+  for (const b of TP_TILES.plan(Object.assign({}, e.tp, { rows: g.rows, cols: g.cols, key: g.key }))) for (const q of b.parts) {
+    if (g.vis && ![...Array(q.rh).keys()].every(j => g.vis.has(q.r + j))) continue;
+    const cw = q.cw * sub;
+    q.keep.forEach((on, t) => {
+      if (!on) return;
+      const x = (q.c + (t % cw) / sub) * g.cw, y = g.y0 + (q.r + Math.floor(t / cw) / sub) * g.ch;
+      (b.style ? ink : steel).rect(Math.round(x * ux), Math.round(y * uy), Math.round((x + g.cw / sub) * ux) - Math.round(x * ux), Math.round((y + g.ch / sub) * uy) - Math.round(y * uy));
+    });
+  }
+  c.fillStyle = TEX.complete && TEX.naturalWidth ? c.createPattern(TEX, "repeat") : "#6f9ac4"; c.fill(steel);
+  c.fillStyle = "#fff"; c.fill(ink);
+  c.save(); c.clip(ink); c.strokeStyle = "rgba(31,28,25,.55)"; c.lineWidth = Math.max(1, k * .8);
+  const step = Math.max(4, 5 * k);
+  for (let x = -cv.height; x < cv.width; x += step) { c.beginPath(); c.moveTo(x, cv.height); c.lineTo(x + cv.height, 0); c.stroke(); }
+  c.restore();
 }
 function place(d, e, m) {
   d.style.left = m.left + e.x * m.uw + "px"; d.style.top = m.top + e.y * m.uh + "px";
@@ -746,7 +805,7 @@ function renderInsp() {
   const set = (id, val) => { const el = $(id); if (document.activeElement !== el) el.value = val == null ? "" : val; };
   set("iLabel", e.label); set("iX", r3(e.x)); set("iY", r3(e.y)); set("iW", r3(e.w)); set("iH", r3(e.h));
   $("iRead").innerHTML = spanText(e); $("iLock").checked = !!e.locked;
-  $("iTextBox").hidden = e.type !== "text"; $("iCardBox").hidden = e.type !== "card"; $("iVarRow").hidden = e.type !== "strip";
+  $("iTextBox").hidden = e.type !== "text"; $("iCardBox").hidden = e.type !== "card"; $("iPatBox").hidden = !e.tp;
   if (e.type === "text") {
     const b = binding(e, page());
     $("iTextSrc").innerHTML = !b ? "Only a stand-in here: give it no selector to make it a placed text on the site."
@@ -756,7 +815,15 @@ function renderInsp() {
     $("iSize").title = (e.size * M().uw).toFixed(1) + " px at this size";
   }
   if (e.type === "card") { set("iNum", e.num); set("iTtl", e.ttl); set("iNumSize", e.numSize); set("iTtlSize", e.ttlSize); }
-  set("iVar", e.variant || "fill");
+  if (e.tp) {
+    const t = e.tp, kind = tpKind(e, page()), fixed = /^\d+$/.test(String(t.seed));
+    set("tpDraw", t.draw); set("tpOutlines", t.outlines); set("tpEmpty", t.empty); set("tpHoles", t.holes); set("tpBlocks", t.blocks);
+    set("tpScale", String(t.scale)); set("tpRows", t.rows || 7); set("tpFixed", fixed ? "fixed" : "visit"); set("tpSeed", fixed ? t.seed : "");
+    $("tpOutlinesV").textContent = Math.round(t.outlines * 100) + "%"; $("tpEmptyV").textContent = Math.round(t.empty * 100) + "%";
+    $("tpOutRow").hidden = t.draw !== "mix"; $("tpRowsRow").hidden = kind !== "stage"; $("tpSeedRow").hidden = !fixed;
+    $("tpNote").textContent = (kind === "stripSection" ? "On this page the strip turns to these settings row by row, as the rows slide away. " : "")
+      + (fixed ? "The site always draws this arrangement." : "The site draws a new arrangement on each visit; this is one of them.");
+  }
   set("iRatio", e.ratio ? String(e.ratioText || r3(e.ratio)) : ""); set("iSel", e.sel || "");
   $("iParent").innerHTML = `<option value="">the grid (frame)</option>` +
     page().els.filter(o => o.id !== e.id && o.type === "area").map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join("");
@@ -970,6 +1037,7 @@ $("addBtn").addEventListener("click", () => {
     area: E("area", "Container", 1, 1, 6, 4), strip: E("strip", "Strip", 14, 2, 1, 6, { variant: "fill" }), mark: E("mark", "Outline square", 1, 1, .71, .71)
   }[t];
   base.id = newId(); if (S.grid.gx && base.type !== "mark") base.w = r3(base.w - S.grid.gx);
+  ensureTp(base, p);
   if (t === "area") p.els.unshift(base); else p.els.push(base);
   selId = base.id; commit(); render();
 });
@@ -985,8 +1053,8 @@ iNum("iNumSize", (e, v) => e.numSize = v); iNum("iTtlSize", (e, v) => e.ttlSize 
 const iTxt = (id, fn, also) => $(id).addEventListener("input", () => { const e = sel(); if (e) { fn(e, $(id).value); commit(); renderEls(); if (also) renderList(); } });
 iTxt("iLabel", (e, v) => e.label = v, true); iTxt("iText", (e, v) => e.text = v);
 iTxt("iNum", (e, v) => e.num = v); iTxt("iTtl", (e, v) => e.ttl = v); iTxt("iSel", (e, v) => e.sel = v.trim());
-["iFont", "iColor", "iAlign", "iVar", "iParent"].forEach(id => $(id).addEventListener("change", () => {
-  const e = sel(); if (!e) return; const k = { iFont: "font", iColor: "color", iAlign: "align", iVar: "variant", iParent: "parent" }[id];
+["iFont", "iColor", "iAlign", "iParent"].forEach(id => $(id).addEventListener("change", () => {
+  const e = sel(); if (!e) return; const k = { iFont: "font", iColor: "color", iAlign: "align", iParent: "parent" }[id];
   e[k] = $(id).value; commit(); renderEls();
 }));
 $("iRatio").addEventListener("change", () => {
@@ -1003,7 +1071,17 @@ function dup() { const e = sel(); if (!e) return; const c = JSON.parse(JSON.stri
 function del() { const e = sel(); if (!e) return;
   if (STRUCTURAL.test(e.sel || "")) { toast("“" + e.label + "” holds other parts of the site — move, resize or hide it (●) instead of deleting it"); return; }
   const p = page(); p.els = p.els.filter(o => o !== e); p.els.forEach(o => { if (o.parent === e.id) o.parent = ""; }); selId = null; commit(); render(); }
-$("iDup").addEventListener("click", dup); $("iDel").addEventListener("click", del);
+$("iDup").addEventListener("click", dup);
+// pattern settings
+const tpSet = (fn) => { const e = sel(); if (!e || !e.tp) return; fn(e.tp); commit(); renderEls(); renderInsp(); };
+Object.entries({ tpDraw: "draw", tpHoles: "holes", tpBlocks: "blocks", tpScale: "scale" })
+  .forEach(([id, k]) => $(id).addEventListener("change", () => tpSet(t => { t[k] = $(id).value; })));
+["tpOutlines", "tpEmpty"].forEach(id => $(id).addEventListener("input", () => tpSet(t => { t[id === "tpOutlines" ? "outlines" : "empty"] = Number($(id).value); })));
+$("tpRows").addEventListener("change", () => tpSet(t => { t.rows = Math.max(2, Math.min(14, Math.round(Number($("tpRows").value) || 7))); }));
+const newSeed = () => String(1 + Math.floor(Math.random() * 9999));
+$("tpFixed").addEventListener("change", () => tpSet(t => { t.seed = $("tpFixed").value === "fixed" ? newSeed() : "visit"; }));
+$("tpSeed").addEventListener("change", () => tpSet(t => { t.seed = String(Math.max(1, Math.round(Number($("tpSeed").value) || 1))); }));
+$("tpShuffle").addEventListener("click", () => tpSet(t => { t.seed = newSeed(); })); $("iDel").addEventListener("click", del);
 
 /* keys */
 const typing = () => /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
@@ -1108,7 +1186,7 @@ function cssText() {
         }
         if (e.type === "pattern") {   // an extra pattern area: js/main.js makes the element and tiles the pattern into it
           const xs = `.frame > .xpat[data-pa="${pageKey(p)}:${e.id}"]`;   // home: always placed, it slides away with the rows
-          add(isHome ? xs : scoped(sc, xs), [`display: block;`, ...box(e, null)], where(e) + " (pattern area)");
+          add(isHome ? xs : scoped(sc, xs), [`display: block;`, ...box(e, null), ...TP_TILES.toCss(e.tp)], where(e) + " (pattern area)");
           return;
         }
         if (e.type !== "card") notes.push(`${p.name} · ${where(e)} — no selector, not written`);
@@ -1181,6 +1259,7 @@ function cssText() {
         if (kids.length) lift = Math.max(0, r3(e.y - Math.min(...kids.map(o => o.y))));
       }
       const d = box(lift ? Object.assign({}, e, { y: e.y - lift, h: e.h + lift }) : e, P, e.type !== "text");
+      if (e.tp) d.push(...TP_TILES.toCss(e.tp));   // pattern settings, read by js/main.js
       if (lift) d.push(`padding-top: ${len(lift, "y")};`);
       if (e.type === "text") d.push(...typeDecl(e));
       add(S_(sel), d, where(e) + (lift ? ` (lifted ${fmt(lift)} for the heading above it)` : ""));
