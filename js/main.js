@@ -74,6 +74,23 @@
     if ((t.page || "home") === "home") introEl.insertAdjacentHTML("beforeend", `<div class="xtext-m">${xparas(t.text)}</div>`);
   });
 
+  // extra pattern areas drawn in admin/layout.html: css/layout.css names and places each one
+  // (.xpat[data-pa="page:id"]); an empty element is made for each, and the pattern is tiled into it
+  const patchEls = [];
+  (function findPatches() {
+    const ids = new Set();
+    const walk = rules => { for (const r of rules) {
+      if (r.cssRules) walk(r.cssRules);
+      if (r.selectorText) for (const m of r.selectorText.matchAll(/\.xpat\[data-pa="([^"]+)"\]/g)) ids.add(m[1]);
+    } };
+    for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch (e) {} }
+    ids.forEach(id => {
+      const el = document.createElement("div");
+      el.className = "xpat"; el.dataset.pa = id; el.dataset.page = id.split(":")[0]; el.setAttribute("aria-hidden", "true");
+      frame.insertBefore(el, $("#stage")); patchEls.push(el);
+    });
+  })();
+
   const roll = txt => `<span class="roll">${[...txt].map((c, i) =>
     `<span class="ch" style="--i:${i}">${c}</span>`).join("")}</span>`;
   navList.innerHTML = SITE.sections.map((s, i) =>
@@ -247,8 +264,8 @@
   }
   const withHoles = (R, q) => Object.assign(q, { keep: holes(R, q.cw * TILE_SUB, q.rh * TILE_SUB) });
   const gridPlans = {};
-  function gridPlan(rows, units, extras) {
-    const key = rows + ":" + units + ":" + extras;
+  function gridPlan(rows, units, extras, seed) {
+    const key = rows + ":" + units + ":" + extras + (seed ? ":" + seed : "");
     if (gridPlans[key]) return gridPlans[key];
     const R = planRng("grid" + key);
     const used = Array.from({ length: rows }, () => new Array(units).fill(false));
@@ -282,7 +299,7 @@
       q.keep = Array.from({ length: cols * rws }, (_, t) => mask[q.r * TILE_SUB + Math.floor(t / cols)][q.c * TILE_SUB + t % cols]);
     }
     // a few blocks drawn as ink outlines (about one in five, as in the mockup)
-    const outlines = clamp(Math.round(blocks.length * .2), 2, 5), pick = [...blocks.keys()];
+    const outlines = seed ? Math.round(blocks.length * .2) : clamp(Math.round(blocks.length * .2), 2, 5), pick = [...blocks.keys()];
     for (let i = 0; i < outlines && pick.length; i++) {
       const b = blocks[pick.splice(Math.floor(R() * pick.length), 1)[0]];
       b.style = 1; b.zoom = Math.min(b.zoom, 1.5);       // fine outlines turn to noise when very small
@@ -399,6 +416,24 @@
           { ox: row.ox + px * row.m * (b.k - 1) + (b.dx || 0) * home.w, oy: row.oy + py * row.m * (b.k - 1) + (b.dy || 0) * home.h, style: b.style, zoom: b.zoom }, clip, row.shift);
       }
     }
+    // the extra pattern areas: the same squares (one module each, rounded to fit), their own arrangement.
+    // On the home page they slide out to the left with the row they sit beside when a section opens.
+    if (!mobile) for (const pe of patchEls) {
+      const r = relRect(pe);
+      if (r.w < 2 || r.h < 2) continue;
+      const isHome = pe.dataset.page === "home", unit = uw + gapPx;
+      const cols = Math.max(1, Math.round((r.w + gapPx) / unit)), rws = Math.max(1, Math.round((r.h + gapPx) / unit));
+      const cw = (r.w + gapPx) / cols, ch = (r.h + gapPx) / rws;
+      let shift = 0, m = 1;
+      if (isHome) {
+        const row = rows[clamp(Math.floor((r.y + r.h / 2 - home.y) / (sh + gapPx)), 0, n - 1)];
+        if (!row.on) continue;
+        m = row.m; shift = (1 - m) * (r.x + r.w - home.x + 60);
+      }
+      for (const b of gridPlan(rws, cols, false, pe.dataset.pa)) for (const q of b.parts)
+        pushSub(rects, r.x + q.c * cw - shift, r.y + q.r * ch, q.cw * cw - gapPx, q.rh * ch - gapPx, q.keep, q.cw * TILE_SUB, q.rh * TILE_SUB,
+          { ox: oxHome(0) + shift + px * m * (b.k - 1), oy: -home.y + py * m * (b.k - 1), style: b.style, zoom: b.zoom }, isHome ? clip : null, shift);
+    }
     S.lastRects = rects.concat(sliverRects);
     return S.lastRects;                          // the strip last, so it draws in a batch of its own
   }
@@ -451,7 +486,7 @@
   function patternPoint(e) {
     if (current || !S.started || !S.lastRects || !S.lastRects.length) return null;
     const c = canvas.getBoundingClientRect(), x = e.clientX - c.left, y = e.clientY - c.top;
-    const inArea = [stage, sliver, markEl].some(el => { if (!el) return false; const r = relRect(el); return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h; });
+    const inArea = [stage, sliver, markEl, ...patchEls].some(el => { if (!el) return false; const r = relRect(el); return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h; });
     if (!inArea) return null;
     // the square under the click (or the nearest one, for an empty square) maps it into the pattern
     let best = null, bd = Infinity;

@@ -1004,6 +1004,10 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
   }
 }
 
+/* extra pattern areas (admin/layout.html): empty boxes the pattern is tiled into, wide screens only */
+.xpat { display: none; }
+@media (min-width: 821px) { .frame > .xpat { position: absolute !important; grid-area: auto; pointer-events: none; } }
+
 /* placed texts (admin/layout.html): hidden until css/layout.css places one on its page */
 .xtext { display: none; }
 .xtext .xp + .xp, .xtext-m .xp + .xp { margin-top: 1em; }

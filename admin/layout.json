@@ -1,7 +1,7 @@
 {
   "app": "turning-point-layout",
   "version": 2,
-  "savedAt": 1795495394820,
+  "savedAt": 1795494499351,
   "viewport": {
     "w": 1920,
     "h": 1080
@@ -125,11 +125,11 @@
           "color": "ink",
           "align": "right",
           "cols": 1,
-          "text": "",
+          "text": "4 December 2026 to 21 March 2027",
           "sel": ".meta",
           "parent": "e10lrw",
           "id": "e6xpd",
-          "textFrom": ""
+          "textFrom": "4 December 2026 to 21 March 2027"
         },
         {
           "type": "text",
@@ -208,9 +208,9 @@
         {
           "type": "area",
           "label": "Section (.panel)",
-          "x": 0.5,
+          "x": 0,
           "y": 1.5,
-          "w": 13.5,
+          "w": 14,
           "h": 6.5,
           "sel": ".frame > .panel",
           "id": "ebfnl"
@@ -228,11 +228,11 @@
           "color": "ink",
           "align": "left",
           "cols": 1,
-          "text": "The Team",
+          "text": "THE TEAM",
           "sel": ".phead h2",
           "parent": "ebfnl",
           "id": "ec0hm",
-          "textFrom": "The Team"
+          "textFrom": "THE TEAM"
         },
         {
           "type": "text",

@@ -1106,6 +1106,11 @@ function cssText() {
           add(scoped(isHome ? SCOPES.home : sc, `.frame > .xtext[data-xt="${e.id}"]`), [`display: block;`, ...box(e, null, false), ...typeDecl(e)], where(e) + " (placed text)");
           return;
         }
+        if (e.type === "pattern") {   // an extra pattern area: js/main.js makes the element and tiles the pattern into it
+          const xs = `.frame > .xpat[data-pa="${pageKey(p)}:${e.id}"]`;   // home: always placed, it slides away with the rows
+          add(isHome ? xs : scoped(sc, xs), [`display: block;`, ...box(e, null)], where(e) + " (pattern area)");
+          return;
+        }
         if (e.type !== "card") notes.push(`${p.name} · ${where(e)} — no selector, not written`);
         return;
       }
