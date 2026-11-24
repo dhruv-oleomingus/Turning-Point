@@ -1,0 +1,18 @@
+# Turning Point — caching
+# The server's default keeps CSS and JS for 7 days, so after an update a returning
+# visitor gets the new index.html with last week's styles and scripts (and last week's
+# content.js). Pages, styles, scripts and data are checked on every visit instead —
+# a quick "not modified" when nothing changed. Images, fonts and video keep the long cache.
+<IfModule mod_expires.c>
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/css "access plus 0 seconds"
+  ExpiresByType application/javascript "access plus 0 seconds"
+  ExpiresByType text/javascript "access plus 0 seconds"
+  ExpiresByType application/json "access plus 0 seconds"
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html?|css|m?js|json|glb)$">
+    Header set Cache-Control "no-cache"
+    Header unset Expires
+  </FilesMatch>
+</IfModule>
