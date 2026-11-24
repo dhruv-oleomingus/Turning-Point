@@ -457,7 +457,7 @@ const DEFAULT_PAGES = () => [
     E("area", "Section (.panel)", 0, 1, 14, 7, { sel: ".frame > .panel" }),
     T("Section title", 0, 1.38, 6, .5, { sel: ".phead h2", parent: "Section (.panel)", font: "display", size: .44, lh: 1, text: "4 Credits." }),
     T("Lede", 6, 1.2, 4, .65, { sel: ".phead .lede", parent: "Section (.panel)", text: "Turning Point was conceived, designed and built at Anant University." }),
-    T("Back", 11, 1.5, 3, .36, { sel: ".phead .back", parent: "Section (.panel)", font: "display-italic", size: .32, lh: 1, align: "right", text: "Back." }),
+    T("Back", 11, 1.5, 3, .36, { sel: ".phead .back", parent: "Section (.panel)", font: "display-italic", size: .32, lh: 1, align: "right", color: "accent", text: "Back." }),
     T("Content (credits)", 0, 2, 14, 3.4, { sel: ".panel > .credits", parent: "Section (.panel)", size: .19, lh: 1.32, cols: 3, text: "Concept & design\nName Surname\nName Surname\nName Surname\nName Surname\n\nPattern & computation\nName Surname\nName Surname\nName Surname\n\nFabrication\nName Surname\nName Surname\n\nSite & structure\nName Surname\nName Surname\nName Surname" }),
     strip(true)
   ]},
@@ -465,7 +465,7 @@ const DEFAULT_PAGES = () => [
     E("area", "Section (.panel.is-feat)", 0, 0, 14, 8, { sel: ".frame > .panel.is-feat" }),
     E("image", "Image carousel", 0, 0, 9, 8, { sel: ".feat__imgbox", parent: "Section (.panel.is-feat)" }),
     T("Title over image", .5, .63, 6, .5, { sel: ".feat__title", parent: "Section (.panel.is-feat)", font: "display", size: .44, lh: 1, color: "white", text: "2 Structure & Process." }),
-    T("Back", 12.5, .99, 1.5, .36, { sel: ".feat__back", parent: "Section (.panel.is-feat)", font: "display-italic", size: .3, lh: 1, align: "right", text: "Back." }),
+    T("Back", 12.5, .99, 1.5, .36, { sel: ".feat__back", parent: "Section (.panel.is-feat)", font: "display-italic", size: .3, lh: 1, align: "right", color: "accent", text: "Back." }),
     T("Text column", 9.5, 1.5, 4, 6.5, { sel: ".feat__text", parent: "Section (.panel.is-feat)", size: .2, lh: 1.3, align: "justify", text: "Four columns in dynamic balance\n\n" + LOREM + "\n\n" + LOREM }),
     T("Image caption bar", .5, 7.45, 8, .26, { sel: ".feat__foot", parent: "Section (.panel.is-feat)", size: .17, lh: 1.2, color: "white", text: "1 / 6   ‹  ›   Caption for the image" }),
     strip(true)
@@ -474,7 +474,7 @@ const DEFAULT_PAGES = () => [
     E("area", "Section (.panel.is-cards)", 0, 0, 14, 8, { sel: ".frame > .panel.is-cards" }),
     E("area", "Card track (cut at col 13)", 0, 1.39, 13, 6.61, { sel: ".panel.is-cards .htrack", parent: "Section (.panel.is-cards)" }),
     T("Section title", 0, .6, 5, .5, { sel: ".panel.is-cards .phead h2", parent: "Section (.panel.is-cards)", font: "display", size: .44, lh: 1, text: "1 Explore." }),
-    T("Back", 12.5, .99, 1.5, .36, { sel: ".panel.is-cards .phead .back", parent: "Section (.panel.is-cards)", font: "display-italic", size: .3, lh: 1, align: "right", text: "Back." }),
+    T("Back", 12.5, .99, 1.5, .36, { sel: ".panel.is-cards .phead .back", parent: "Section (.panel.is-cards)", font: "display-italic", size: .3, lh: 1, align: "right", color: "accent", text: "Back." }),
     ...["Confluence", "Metamorphosis", "Flux", "Emergence", "Perforation"].map((t, i) =>
       E("card", "Card " + (i + 1), i * 4.13, 1.39, 3.72, 6.61, { sel: i ? "" : ".panel.is-cards .htrack > .card", num: "0" + (i + 1), ttl: t, numSize: .53, ttlSize: .42 })),
     strip(true)
@@ -780,6 +780,7 @@ function spanText(e) {
   const c0 = Math.floor(e.x + eps) + 1, c1 = Math.ceil(e.x + e.w - eps), r0 = Math.floor(e.y + eps) + 1, r1 = Math.ceil(e.y + e.h - eps);
   const rng = (a, b) => a === b ? `${a}` : `${a}–${b}`;
   const out = (e.x < -eps || e.x + e.w > g.cols + eps || e.y < -eps || (e.y + e.h > g.rows + eps && e.type !== "box")) ? " · runs past the grid"
+    : e.type === "box" && (() => { const P = page().els.find(o => o.id === e.parent); return P && e.x + e.w > P.x + P.w + eps; })() ? " · <b>runs past the section's right edge — cropped on the site</b>"
     : e.type === "box" && e.y + e.h > g.rows + eps ? " · below the screen: scrolls into view" : "";
   return `<b>Columns ${rng(c0, c1)}</b> · <b>rows ${rng(r0, r1)}</b>${out}<br>${r3(e.w)} × ${r3(e.h)} u = ${Math.round(e.w * m.uw)} × ${Math.round(e.h * m.uh)} px at ${m.W} × ${m.H}`;
 }
@@ -1313,7 +1314,9 @@ function cssText() {
       // items placed one by one: the panel stops laying them out itself, and scrolls to a module below the lowest
       const boxes = sel === ".frame > .panel" ? p.els.filter(o => o.type === "box" && o.parent === e.id && !o.hidden) : [];
       if (boxes.length) {
-        d.push("display: block;");
+        // never sideways: anything past the right edge is cropped; no scroll bar narrowing the grid (wheel and touch still scroll)
+        d.push("display: block;", "overflow-x: hidden;", "scrollbar-width: none;");
+        add(S_(sel) + "::-webkit-scrollbar", ["display: none;"]);
         const low = Math.max(...boxes.map(b => b.y + b.h + (b.cap ? .5 : 0)));
         add(S_(sel) + "::after", [`content: ""; position: absolute; left: 0; width: 1px; height: 1px;`, `top: ${len(low + 1 - (e.y - lift), "y")};`]);
       }

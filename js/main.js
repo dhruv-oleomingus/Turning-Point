@@ -979,12 +979,42 @@
         if (!e.isIntersecting) return;
         e.target.style.setProperty("--i", k++);
         e.target.classList.add("is-in");
+        if (PATTERN_REVEAL.has(panel.dataset.sec)) e.target.querySelectorAll(".media").forEach((m, j) => patternReveal(m, T((k - 1) * 60 + j * 40)));
         io.unobserve(e.target);
       });
     }, { rootMargin: "0px 0px -6% 0px" });
     panel.querySelectorAll(".box").forEach(b => io.observe(b));
     // once the first boxes are in, later ones should not wait for the strips
     setTimeout(() => panel.style.setProperty("--wait", "0ms"), T(waitMs + 300));
+  }
+
+  /* Pictures that grow in through the reaction–diffusion pattern (assets/img/dissolve.png) — the opening
+     text's dissolve, run the other way: each picture gets its own filter, whose threshold sweeps from
+     nothing shown to all of it; then the filter is removed. Sections listed here use it. */
+  const PATTERN_REVEAL = new Set(["structure"]);
+  let revealN = 0;
+  // the pattern is loaded up front: a filter whose image isn't there yet shows the picture unfiltered
+  const dissolveImg = new Image(); dissolveImg.src = "assets/img/dissolve.png";
+  const dissolveReady = (dissolveImg.decode ? dissolveImg.decode() : Promise.resolve()).catch(() => {});
+  function patternReveal(media, delay = 0) {
+    if (reduced) { media.classList.add("is-shown"); return; }
+    const id = "rdIn" + (++revealN);
+    document.body.insertAdjacentHTML("beforeend",
+      `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="${id}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">` +
+      `<feImage href="assets/img/dissolve.png" x="0" y="0" width="460" height="460" preserveAspectRatio="none" result="t"/><feTile in="t" result="tt"/>` +
+      `<feComponentTransfer in="tt" result="m"><feFuncA type="linear" slope="30" intercept="-30"/></feComponentTransfer>` +
+      `<feComposite in="SourceGraphic" in2="m" operator="in"/></filter></svg>`);
+    const svgEl = document.body.lastElementChild, fn = svgEl.querySelector("feFuncA");
+    media.style.filter = `url(#${id})`;   // applied while still hidden, so its image is in place when it shows
+    dissolveReady.then(() => setTimeout(() => requestAnimationFrame(() => {
+      media.classList.add("is-shown");
+      const t0 = performance.now(), DUR = T(650);
+      (function step(now) {
+        const k = Math.min(1, (now - t0) / DUR), e = k * k * (3 - 2 * k);
+        fn.setAttribute("intercept", (-30 + 31.5 * e).toFixed(3));   // the pattern's peaks first, then everything
+        if (k < 1) requestAnimationFrame(step); else { media.style.filter = ""; svgEl.remove(); }
+      })(t0);
+    }), delay + 60));
   }
 
   let current = "";

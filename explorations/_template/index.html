@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/explore.css">
+  <link rel="stylesheet" href="../shared/explore.css?v=20261125b">
   <style>
     /* your styles */
     #work { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); letter-spacing: .2em; text-transform: uppercase; font-size: var(--small); }
@@ -23,12 +23,15 @@
     <button type="button" id="infoBtn" aria-expanded="false" aria-controls="info">About</button>
   </header>
 
-  <aside class="xinfo" id="info">
+  <aside class="xinfo" id="info" data-placeholder>
     <p>A short text about this exploration.</p>
   </aside>
 
   <!-- 3. Your piece goes here: a canvas, p5.js sketch, Three.js scene, video … -->
-  <main id="work">Interactive piece in progress</main>
+  <main id="work" data-placeholder>Interactive piece in progress</main>
+  <!-- until the piece is built: its description from the content editor (Explore → its card's text) -->
+  <script src="../../js/content.js?v=20261125b"></script>
+  <script src="../shared/explore.js?v=20261125b"></script>
 
   <!-- Optional: the same reaction–diffusion engine used on the homepage -->
   <!-- <script src="../../js/rd.js"></script> -->

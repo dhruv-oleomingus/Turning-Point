@@ -3,7 +3,7 @@
 :root {
   --m: clamp(16px, 1.9vw, 56px);
   --ink: #1f1c19; --grey: #5d5853; --soft: #8d857d; --dim: #d9d0c6;
-  --gold: #a9844f; --rust: #bf6a33; --line: rgba(31, 28, 25, .14);
+  --gold: #a9844f; --blue: #449ad4; --rust: #bf6a33; --line: rgba(31, 28, 25, .14);
   --sans: "Source Sans 3", Calibri, Carlito, "Segoe UI", system-ui, sans-serif;
   --serif: "Cormorant Garamond", Georgia, serif;
   --small: clamp(11px, .45rem + .3vw, 14px);
@@ -21,7 +21,8 @@ a { color: inherit; text-decoration: none; }
   pointer-events: none;
 }
 .xbar > * { pointer-events: auto; }
-.xbar .back { color: var(--gold); }
+.xbar .back { color: var(--blue); }   /* back links are blue, as on the site */
+.xbar .back:hover { color: var(--ink); }
 .xbar .name { color: var(--grey); }
 .xbar .name em { font-family: var(--serif); font-size: 1.5em; letter-spacing: 0; text-transform: none; color: var(--gold); margin-right: .4em; }
 .xbar button { font: inherit; letter-spacing: inherit; text-transform: inherit; background: none; border: 0; padding: 0; color: var(--grey); cursor: pointer; }
@@ -55,3 +56,8 @@ a { color: inherit; text-decoration: none; }
   transition: opacity 1s var(--ease);
 }
 .xhint.is-gone { opacity: 0; }
+
+/* A piece not built yet: the description written for it in the content editor (its card's text) */
+.xsoon { max-width: min(34em, 100% - 2 * var(--m)); text-align: center; text-transform: none; letter-spacing: 0; }
+.xsoon__status { margin: 0 0 1.4em; font-size: var(--small); letter-spacing: .2em; text-transform: uppercase; color: var(--soft); }
+.xsoon__text { margin: 0; font-size: clamp(16px, .7rem + .6vw, 22px); line-height: 1.5; color: var(--ink); }

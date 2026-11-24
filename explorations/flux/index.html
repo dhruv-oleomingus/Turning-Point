@@ -44,11 +44,11 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 #back{position:fixed;z-index:5;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));
   display:inline-flex;align-items:center;gap:.7em;padding:.75em 1.3em .75em 1.05em;
   font:600 12px/1 "Source Sans 3",system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;
-  color:#2a2119;background:var(--haze);border:1px solid #2a2119;transition:background .35s,color .35s,border-color .35s}
-#back:hover,#back:focus-visible{background:#2a2119;color:var(--haze);outline:none}
+  color:#449ad4;background:var(--haze);border:1px solid #449ad4;transition:background .35s,color .35s,border-color .35s}   /* back buttons are blue */
+#back:hover,#back:focus-visible{background:#449ad4;color:#fff;outline:none}
 #back.beside{top:50%;left:calc((100vw - var(--fw)) / 2 - 172px);translate:0 -50%;font-size:13px;
-  color:var(--haze);background:transparent;border-color:rgba(220,210,196,.5)}
-#back.beside:hover,#back.beside:focus-visible{background:var(--haze);color:var(--surround);border-color:var(--haze)}
+  color:#5aaee6;background:transparent;border-color:rgba(90,174,230,.6)}
+#back.beside:hover,#back.beside:focus-visible{background:#449ad4;color:#fff;border-color:#449ad4}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>

@@ -1050,9 +1050,10 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
 .phead .back {
   font-family: var(--display); font-style: italic; font-weight: 700;
   letter-spacing: 0; text-transform: none; border: 0; padding: 0; gap: .35em; background: none;
+  color: var(--accent);   /* back buttons are blue */
 }
 .phead .back::after { content: "."; margin-left: -.35em; }
-.phead .back:hover, .phead .back:focus-visible { background: none; color: var(--accent); }
+.phead .back:hover, .phead .back:focus-visible { background: none; color: var(--ink); }
 .box-text h3, .box-links h3 {
   font-family: var(--display); font-style: italic; font-weight: 700; font-size: 1.3em; line-height: 1.15;
   letter-spacing: 0; text-transform: none; color: var(--ink);
@@ -1256,11 +1257,11 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
     position: absolute; z-index: 3; right: 0; top: calc(1.23 * var(--u) - .8em);
     background: none; border: 0; padding: 0; cursor: pointer;
     font-family: var(--display); font-style: italic; font-weight: 700;
-    font-size: calc(.3 * var(--u)); line-height: 1; color: var(--ink);
+    font-size: calc(.3 * var(--u)); line-height: 1; color: var(--accent);
     transition: color calc(.15s / var(--speed)) var(--ease);
   }
   .feat__back::after { content: "."; }
-  .feat__back:hover, .feat__back:focus-visible { color: var(--accent); }
+  .feat__back:hover, .feat__back:focus-visible { color: var(--ink); }
   .feat__text {                                /* columns 9½–13½, from under "Back." to the bottom */
     position: absolute; z-index: 2; top: calc(1.5 * var(--u)); bottom: 0;   /* scrolls out of sight just under "Back." */
     left: calc(9.5 * var(--u)); width: calc(4 * var(--u));
@@ -1306,8 +1307,18 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
   .panel.is-cards .card h3 { margin: 0; font-size: calc(.42 * var(--u)); line-height: 1.1; white-space: nowrap; overflow: visible; }
 }
 
-/* "Coming soon." (comingSoon in content.js): in the display italic, on the line under row 3 */
-.soon { margin: 0; font-family: var(--display); font-style: italic; font-weight: 700; line-height: 1; color: var(--ink); font-size: 34px; }
+/* "Coming soon." (comingSoon in content.js): set like the sections' content text */
+.soon { margin: 0; font-family: var(--text); font-style: normal; font-weight: 400; letter-spacing: 0; text-transform: none; line-height: 1.32; color: var(--ink); font-size: inherit; }
 @media (min-width: 821px) {
-  .panel > .soon { font-size: calc(.6 * var(--u)); padding-top: calc(.7 * var(--u)); }
+  .panel > .soon { padding-top: calc(.7 * var(--u)); }
 }
+
+/* Structure & Process: pictures come in through the reaction–diffusion pattern (js/main.js,
+   patternReveal) instead of wiping in; their boxes don't wipe either */
+.panel[data-sec="structure"] figure.box { clip-path: none; transform: none; transition: opacity calc(.3s / var(--speed)) var(--ease); }
+.panel[data-sec="structure"].is-leaving figure.box { opacity: 0; transition-delay: 0s; }
+.panel[data-sec="structure"] .media { clip-path: none; transition: none; opacity: 0; }
+.panel[data-sec="structure"] .media.is-shown { opacity: 1; }
+.panel[data-sec="structure"] .media img, .panel[data-sec="structure"] .media video, .panel[data-sec="structure"] .media iframe { transform: none; transition: none; }
+.panel[data-sec="structure"] figure.box figcaption { opacity: 0; transition: opacity calc(.5s / var(--speed)) var(--ease) calc(.25s / var(--speed)); }
+.panel[data-sec="structure"] figure.box.is-in figcaption { opacity: 1; }
