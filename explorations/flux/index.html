@@ -1,45 +1,477 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <!-- Flux: build the interactive piece in this file -->
-  <title>Flux — Turning Point</title>
-  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/explore.css">
-  <style>
-    /* your styles */
-    #work { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); letter-spacing: .2em; text-transform: uppercase; font-size: var(--small); }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Flux — Turning Point</title>
+<link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Source+Sans+3:wght@600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: wordless; the work alone, seen from a standing eye.
+   IDEA: an hourglass — the whole image turns over and the structure pours out into the air.
+   PICTURE: four cor-ten columns on their plinth, horizon on the centre line, which is the neck of the glass.
+   COLOUR: flat dust haze inside the frame, a dark surround outside it.
+   LAYOUT: desktop: one centred 4:3 frame; phone: full screen. No text. */
+:root{--surround:#141210;--haze:#dcd2c4}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
+#stage{position:fixed;left:50%;top:50%;width:100vw;height:100vh;transform-origin:50% 50%;background:var(--haze);
+  translate:-50% -50%;opacity:0;transition:opacity 1.2s ease}
+#stage.ready{opacity:1}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#stage canvas:active{cursor:grabbing}
+.nav{position:absolute;left:50%;translate:-50% 0;width:48px;height:48px;border:0;border-radius:50%;padding:0;display:grid;place-items:center;
+  background:transparent;color:#2a2119;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .8s ease}
+.nav svg{width:30px;height:30px}
+.nav.on{opacity:.75;pointer-events:auto}
+.nav.on:hover{opacity:1}
+.nav:focus-visible{outline:2px solid #2a2119;outline-offset:2px}
+#up{top:max(10px,env(safe-area-inset-top))}
+#up.on svg{animation:bob 2.4s ease-in-out infinite}
+#down{bottom:max(10px,env(safe-area-inset-bottom))}
+@keyframes bob{50%{transform:translateY(-5px)}}
+#passage{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(34ch,78%);max-height:40%;overflow-y:auto;overscroll-behavior:contain;
+  margin:0;padding:0 6px;font:400 clamp(16px,1.9vmin,19px)/1.6 Newsreader,Georgia,"Times New Roman",serif;color:#2a2119;text-wrap:pretty;
+  opacity:0;pointer-events:none;transition:opacity 1.4s ease;scrollbar-width:thin;scrollbar-color:rgba(42,33,25,.35) transparent;
+  -webkit-mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent);mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent)}
+#passage p{margin:1.2em 0}
+#passage.on{opacity:1;pointer-events:auto}
+@media(prefers-reduced-motion:reduce){#up.on svg{animation:none}}
+/* SITE: back to the Turning Point Explore section (same button as Metamorphosis).
+   Phone / narrow window: top-left over the image. Desktop with room: in the dark surround, left of the frame. */
+#back{position:fixed;z-index:5;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));
+  display:inline-flex;align-items:center;gap:.7em;padding:.75em 1.3em .75em 1.05em;
+  font:600 12px/1 "Source Sans 3",system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;
+  color:#2a2119;background:var(--haze);border:1px solid #2a2119;transition:background .35s,color .35s,border-color .35s}
+#back .arrow{font-size:1.2em;line-height:1;display:inline-block;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#back:hover,#back:focus-visible{background:#2a2119;color:var(--haze);outline:none}
+#back:hover .arrow{transform:translateX(-.35em)}
+#back.beside{top:50%;left:calc((100vw - var(--fw)) / 2 - 172px);translate:0 -50%;font-size:13px;
+  color:var(--haze);background:transparent;border-color:rgba(220,210,196,.5)}
+#back.beside:hover,#back.beside:focus-visible{background:var(--haze);color:var(--surround);border-color:var(--haze)}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
 <body>
-  <!-- 2. The shared top bar: back link, name, about toggle -->
-  <header class="xbar">
-    <a class="back" href="../../index.html#explore"><span class="arrow">←</span> Turning Point</a>
-    <span class="name"><em>03</em>Flux</span>
-    <button type="button" id="infoBtn" aria-expanded="false" aria-controls="info">About</button>
-  </header>
+<div id="stage" aria-label="Turning Point: four cor-ten columns. Press space or tap to turn the image over; drag to walk around.">
+  <button id="up" class="nav" type="button" aria-label="Look up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+  <div id="passage" tabindex="0" aria-live="polite"></div>
+  <button id="down" class="nav" type="button" aria-label="Look back down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></button>
+</div>
+<a id="back" href="../../index.html#explore"><span class="arrow" aria-hidden="true">&larr;</span> Explore</a>
 
-  <aside class="xinfo" id="info">
-    <p>Flux — a short text about this exploration.</p>
-  </aside>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+{
+const D2R = Math.PI / 180, PI = Math.PI;
+const coarse = matchMedia('(pointer:coarse)').matches;
+const framed = !coarse;                                   /* desktop: 4:3 frame */
+const TEX = (coarse || Math.min(innerWidth, innerHeight) < 600) ? 512 : 1024;
 
-  <!-- 3. Your piece goes here: a canvas, p5.js sketch, Three.js scene, video … -->
-  <main id="work">Interactive piece in progress</main>
+/* tune freely */
+const EYE = 1.65;                                         /* standing eye height = horizon = flip axis */
+const FLIP_DUR = 3.0, ROLL_DUR = 1.2;
+const STAG_APART = 0.34, STAG_GATHER = 0.22;              /* seconds between successive arms */
+const SPIN_SPEED = 0.14;                                  /* rad/s while inverted */
+const PL = 48.8;                                          /* ground slab: 4 × the 40 ft plinth */
+const HAZE = '#dcd2c4';
+const LOOK_MAX = 80 * D2R;                                /* how far you tilt up to meet the upturned ground */
 
-  <!-- Optional: the same reaction–diffusion engine used on the homepage -->
-  <!-- <script src="../../js/rd.js"></script> -->
-  <script>
-    const info = document.getElementById("info"), infoBtn = document.getElementById("infoBtn");
-    infoBtn.addEventListener("click", () => {
-      const open = info.classList.toggle("is-open");
-      infoBtn.setAttribute("aria-expanded", open);
-      infoBtn.textContent = open ? "Close" : "About";
-    });
-  </script>
-  <!-- 4. Then add a { type: "project", … } box for it in js/content.js -->
+/* passages read on the underside of the upturned ground — one is drawn at random each time */
+const PASSAGES = [
+  `The text also highlights the nomadic, peripatetic lifestyle of the court, which frequently moved as a traveling grand encampment between Kabul, Agra, and Lahore. Gulbadan notes a distinct aversion among early Mughal ladies toward confined, permanent buildings, reinforcing a sentiment later expressed by Shah Jahan's daughter, Jahanara Begum, that static, closed housing would foster the decline of the empire.`,
+];
+
+/* ---------- renderer, scene ---------- */
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({antialias: true, powerPreference: 'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, coarse ? 2 : 1.75));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(HAZE);
+
+/* everything that turns over lives in `content`; `world` is the pivot on the horizon line */
+const world = new THREE.Group(), content = new THREE.Group(), structure = new THREE.Group();
+world.position.set(0, EYE, 0);
+content.position.set(0, -EYE, 0);
+world.add(content); content.add(structure); scene.add(world);
+
+const plinth = new THREE.Mesh(new THREE.BoxGeometry(PL, 0.06, PL), new THREE.MeshStandardMaterial({color: '#d8c9b3', roughness: 0.95}));
+plinth.position.y = -0.03; plinth.receiveShadow = true;
+content.add(plinth);
+
+/* lights turn over with the image too */
+const hemi = new THREE.HemisphereLight('#e2e8ea', '#9f805d', 1.25);
+hemi.position.set(0, 1000, 0);
+const sun = new THREE.DirectionalLight('#ffdfbb', 2.9);
+sun.position.set(-9, 8.5, 5); sun.target.position.set(0, 1, 0);
+sun.castShadow = true;
+sun.shadow.mapSize.setScalar(coarse ? 1024 : 2048);
+Object.assign(sun.shadow.camera, {left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 45});
+sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.025;
+content.add(hemi, sun, sun.target);
+
+/* ---------- camera: a person standing beside the work, looking level ---------- */
+const camera = new THREE.PerspectiveCamera(50, 4 / 3, 0.1, 400);
+const view = {az: -0.5, vel: 0, dist: 14};
+function layout() {
+  let w = innerWidth, h = innerHeight;
+  if (framed) {
+    w = Math.floor(Math.min(innerWidth * 0.94, innerHeight * 0.94 * 4 / 3));
+    h = Math.floor(w * 3 / 4);
+  }
+  stage.style.width = w + 'px'; stage.style.height = h + 'px';
+  /* SITE: park the back button beside the frame when the surround has room for it */
+  const back = document.getElementById('back');
+  if (back) { document.documentElement.style.setProperty('--fw', w + 'px'); back.classList.toggle('beside', framed && (innerWidth - w) / 2 >= 190); }
+  renderer.setSize(w, h);
+  const asp = w / h;
+  camera.aspect = asp;
+  camera.fov = asp < 0.8 ? 64 : 50;
+  const tv = Math.tan(camera.fov * D2R / 2), th = tv * asp;
+  view.dist = Math.max(14, 6.6 / tv, (asp < 0.8 ? 4.4 : 7.5) / th);
+  camera.updateProjectionMatrix();
+}
+layout();
+addEventListener('resize', layout);
+
+/* drag to walk around; a tap (no drag) turns it over */
+const cv = renderer.domElement;
+let drag = null;
+cv.addEventListener('pointerdown', e => {
+  drag = {id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: e.timeStamp, t0: e.timeStamp, axis: null};
+  view.vel = 0; cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (!drag.axis && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 8)
+    drag.axis = (canLook() && Math.abs(e.clientY - drag.y0) > Math.abs(e.clientX - drag.x0)) ? 'y' : 'x';
+  if (drag.axis === 'y') {
+    look.target = Math.min(1, Math.max(0, look.target + (e.clientY - drag.y) * (rollParity ? -1 : 1) / (cv.clientHeight * 0.6)));
+    drag.x = e.clientX; drag.y = e.clientY; return;
+  }
+  const dx = (e.clientX - drag.x) * (rollParity ? -1 : 1), dt = Math.max(8, e.timeStamp - drag.t) / 1000;
+  const d = -dx * 0.0055;
+  view.az += d; view.vel = view.vel * 0.5 + (d / dt) * 0.5;
+  drag.x = e.clientX; drag.y = e.clientY; drag.t = e.timeStamp;
+});
+cv.addEventListener('pointerup', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0), held = e.timeStamp - drag.t0;
+  drag = null;
+  if (moved < 8 && held < 350 && look.s < 0.05) { askMotion(); wantFlipped = !wantFlipped; view.vel = 0; }
+});
+cv.addEventListener('pointercancel', () => { drag = null; });
+
+/* ---------- state ---------- */
+const arms = [];
+let order = [], seq = 0, ready = false, spin = 0, spinV = 0;
+let flipped = false, wantFlipped = false, rollParity = false, rollDeg = 0;
+const qFlip = new THREE.Quaternion(), qTmp = new THREE.Quaternion(), qTmp2 = new THREE.Quaternion();
+const Y = new THREE.Vector3(0, 1, 0), X = new THREE.Vector3(1, 0, 0);
+const invContent = new THREE.Matrix4(), mTmp = new THREE.Matrix4();
+const anim = {on: false, t0: 0, dur: FLIP_DUR, axis: new THREE.Vector3(), q0: new THREE.Quaternion(), g: 0, r0: 0, r1: 0};
+
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+const smooth = (a, b, t) => { const x = Math.min(1, Math.max(0, (t - a) / (b - a))); return x * x * (3 - 2 * x); };
+const rnd = (a, b) => a + Math.random() * (b - a);
+function bez(o, a, b, c, d, t) {
+  const u = 1 - t, w0 = u * u * u, w1 = 3 * u * u * t, w2 = 3 * u * t * t, w3 = t * t * t;
+  return o.set(a.x * w0 + b.x * w1 + c.x * w2 + d.x * w3, a.y * w0 + b.y * w1 + c.y * w2 + d.y * w3, a.z * w0 + b.z * w1 + c.z * w2 + d.z * w3);
+}
+
+function startAnim(turn, roll, now) {
+  anim.on = true; anim.t0 = now;
+  anim.g = turn ? PI : 0;
+  anim.dur = turn ? FLIP_DUR : ROLL_DUR;
+  anim.axis.set(camera.position.x, 0, camera.position.z).normalize();   /* the line of sight: the image turns in its own plane */
+  anim.q0.copy(qFlip);
+  anim.r0 = rollDeg; anim.r1 = rollDeg + (roll ? 180 : 0);
+  if (roll) rollParity = !rollParity;
+  if (turn) { flipped = !flipped; schedule(flipped, now + anim.dur); look.target = 0; }
+}
+
+function schedule(toFlipped, at) {
+  if (toFlipped) {
+    let i = 0;
+    for (const a of order) {
+      if (a.mode === 'home') a.pend = {type: 'fall', at: at + 0.6 + (i++) * STAG_APART};
+      else if (a.mode === 'rise') a.pend = {type: 'fall', at};
+      else a.pend = null;
+    }
+  } else {
+    arms.filter(a => a.mode === 'float').sort((p, q) => q.seq - p.seq)
+      .forEach((a, i) => a.pend = {type: 'rise', at: at + 0.4 + i * STAG_GATHER});
+    for (const a of arms) {
+      if (a.mode === 'fall') a.pend = {type: 'rise', at};
+      else if (a.mode === 'home') a.pend = null;
+    }
+  }
+}
+
+/* ---------- arm motion (all poses in content space) ---------- */
+const slotP = new THREE.Vector3(), slotQ = new THREE.Quaternion(), slotS = new THREE.Vector3(), slotO = new THREE.Vector3();
+const cNow = new THREE.Vector3(), qNow = new THREE.Quaternion();
+const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3(), vD = new THREE.Vector3();
+const gL = new THREE.Vector3();                           /* gravity, in content space */
+function centerOf(a, out) { return out.copy(a.lc).applyQuaternion(a.mesh.quaternion).add(a.mesh.position); }
+function place(a, center, q) { a.mesh.quaternion.copy(q); a.mesh.position.copy(a.lc).applyQuaternion(q).negate().add(center); }
+function slotPose(a) {
+  mTmp.multiplyMatrices(invContent, a.slot.matrixWorld).decompose(slotO, slotQ, slotS);
+  return slotP.copy(a.lc).applyQuaternion(slotQ).add(slotO);
+}
+
+/* where a released arm comes to drift: in the open air below, beside and beneath the hanging columns */
+function planFloat(a) {
+  const cw = vA.copy(a.c0).applyMatrix4(content.matrixWorld);
+  const phi = Math.atan2(cw.z, cw.x) + rnd(-0.8, 0.8);
+  const r = Math.min(7, Math.max(Math.hypot(cw.x, cw.z) + rnd(0.6, 2.6), 3.6));
+  const yW = rnd(-3.5, 0.8);
+  a.anchor = new THREE.Vector3(Math.cos(phi) * r, yW, Math.sin(phi) * r).applyMatrix4(invContent);
+  const tilt = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize();
+  a.qA = new THREE.Quaternion().setFromAxisAngle(gL, rnd(-1.2, 1.2)).multiply(a.q0).multiply(qTmp.setFromAxisAngle(tilt, rnd(0.2, 0.9)));
+  a.orbW = rnd(0.018, 0.04);
+  a.bobA = rnd(0.12, 0.35); a.bobW = rnd(0.25, 0.55); a.bobP = rnd(0, 2 * PI);
+  a.tAx = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(); a.tW = rnd(0.03, 0.11) * (Math.random() < 0.5 ? -1 : 1);
+}
+
+function begin(a, type, now) {
+  a.c0 = centerOf(a, new THREE.Vector3());
+  a.q0 = a.mesh.quaternion.clone();
+  a.t0 = now;
+  if (type === 'fall') {
+    gL.set(0, -1, 0).applyQuaternion(qTmp.copy(world.quaternion).invert());
+    planFloat(a);
+    a.seq = ++seq;
+    a.ax = new THREE.Vector3(1, 0, 0).applyQuaternion(a.q0);
+    a.ax.addScaledVector(gL, -a.ax.dot(gL));
+    if (a.ax.lengthSq() < 1e-4) a.ax.set(a.c0.x, 0, a.c0.z);
+    a.ax.normalize();
+    a.dur = 2.6 + 0.22 * a.c0.distanceTo(a.anchor);
+    a.mode = 'fall';
+  } else {
+    a.dur = 2.8;
+    a.mode = 'rise';
+  }
+}
+
+function floatPose(a, now) {
+  const tau = now - a.fT, ang = a.orbW * tau;
+  cNow.copy(a.anchor).applyAxisAngle(Y, ang)
+    .addScaledVector(a.fG, -a.bobA * (Math.sin(a.bobW * tau + a.bobP) - Math.sin(a.bobP)));
+  qNow.setFromAxisAngle(Y, ang).multiply(qTmp2.setFromAxisAngle(a.tAx, a.tW * tau)).multiply(a.qA);
+}
+
+function updateArm(a, now) {
+  if (a.pend && now >= a.pend.at) { const t = a.pend.type; a.pend = null; begin(a, t, now); }
+  if (a.mode === 'home') {
+    slotPose(a); place(a, slotP, slotQ);
+  } else if (a.mode === 'float') {
+    floatPose(a, now); place(a, cNow, qNow);
+  } else if (a.mode === 'fall') {
+    const t = Math.min(1, (now - a.t0) / a.dur), s = ease(t);
+    vB.copy(a.ax).multiplyScalar(0.9).add(a.c0);
+    vC.copy(a.anchor).addScaledVector(gL, -1.2);
+    bez(cNow, a.c0, vB, vC, a.anchor, s);
+    qNow.copy(a.q0).slerp(a.qA, smooth(0.1, 1, t));
+    place(a, cNow, qNow);
+    if (t >= 1) { a.mode = 'float'; a.fT = now; a.fG = gL.clone(); }
+  } else if (a.mode === 'rise') {
+    const t = Math.min(1, (now - a.t0) / a.dur), s = ease(t);
+    slotPose(a);
+    vD.copy(slotP);
+    vA.copy(X).applyQuaternion(slotQ).setY(0);
+    if (vA.lengthSq() > 1e-4) vA.normalize();
+    vB.copy(vD).sub(a.c0).multiplyScalar(0.2).add(a.c0); vB.y += 0.5;
+    vC.copy(vA).multiplyScalar(1.1).add(vD); vC.y += 0.15;
+    bez(cNow, a.c0, vB, vC, vD, s);
+    qNow.copy(a.q0).slerp(slotQ, smooth(0.05, 0.85, t));
+    place(a, cNow, qNow);
+    if (t >= 1) a.mode = 'home';
+  }
+}
+
+/* ---------- loading ---------- */
+let texDone = 0;
+const reveal = () => stage.classList.add('ready');
+setTimeout(() => { if (ready) reveal(); }, 6000);
+const tl = new THREE.TextureLoader();
+const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+function loadTex(a) {
+  const done = () => { if (++texDone >= arms.length) reveal(); };
+  tl.load(`assets/tex/${TEX}/${a.key}.webp`, t => {
+    t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso;
+    const m = a.mesh.material;
+    m.map = t; m.color.set('#ffffff'); m.alphaTest = 0.5; m.alphaToCoverage = true; m.needsUpdate = true;
+    done();
+  }, undefined, done);
+}
+
+const onModel = gltf => {
+  structure.add(gltf.scene);
+  scene.updateMatrixWorld(true);
+  const found = [], pivots = [];
+  gltf.scene.traverse(o => {
+    if (/_Pivot$/.test(o.name)) pivots.push(o);
+    if (!o.isMesh) return;
+    if (/_Rod$/.test(o.name)) { o.visible = false; return; }
+    const m = /^LP_(P\d_Box-\d+)$/.exec(o.name);
+    if (m) found.push({mesh: o, key: m[1]});
+  });
+  /* centre the columns on the plinth */
+  const cen = new THREE.Vector3(), p = new THREE.Vector3();
+  pivots.forEach(o => cen.add(o.getWorldPosition(p)));
+  cen.divideScalar(pivots.length || 1);
+  gltf.scene.position.set(-cen.x, 0, -cen.z);
+  scene.updateMatrixWorld(true);
+  invContent.copy(content.matrixWorld).invert();
+
+  for (const f of found) {
+    const mesh = f.mesh, g = mesh.geometry;
+    g.computeBoundingBox();
+    const lc = g.boundingBox.getCenter(new THREE.Vector3());
+    const slot = new THREE.Object3D();
+    slot.position.copy(mesh.position); slot.quaternion.copy(mesh.quaternion); slot.scale.copy(mesh.scale);
+    mesh.parent.add(slot); mesh.parent.remove(mesh); content.add(mesh);
+    mesh.material = new THREE.MeshStandardMaterial({color: '#83492a', roughness: 0.84, metalness: 0.1, side: THREE.DoubleSide});
+    mesh.castShadow = mesh.receiveShadow = true;
+    arms.push({mesh, slot, key: f.key, lc, mode: 'home', pend: null, seq: 0});
+  }
+  scene.updateMatrixWorld(true);
+  /* highest arms go first: once inverted they hang lowest */
+  order = arms.map(a => ({a, k: slotPose(a).y + Math.random() * 0.35})).sort((p, q) => q.k - p.k).map(o => o.a);
+  arms.forEach(loadTex);
+  ready = true;
+};
+const modelFail = err => { console.error('Flux: model could not be loaded', err); };
+/* structure.glb first (a fresh Blender export drops straight in); structure.glb.json holds the same bytes in base64 for hosts that won't serve .glb */
+const gl = new GLTFLoader();
+gl.load('assets/structure.glb', onModel, undefined, () => {
+  fetch('assets/structure.glb.json').then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)))
+    .then(j => { const bin = Uint8Array.from(atob(j.glb), ch => ch.charCodeAt(0)); gl.parse(bin.buffer, '', onModel, modelFail); })
+    .catch(modelFail);
+});
+
+/* ---------- input: space, tap, turning the phone over ---------- */
+const motion = {active: false, inv: false, s180: false, asked: false};
+const screenAngle = () => { const a = (screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0; return ((a % 360) + 360) % 360; };
+let lastAngle = screenAngle();
+motion.s180 = lastAngle === 180;
+function onOrient(e) {
+  if (e.beta == null) return;
+  motion.active = true;
+  const uy = Math.sin(e.beta * D2R);                     /* +1 upright portrait, -1 upside down */
+  const was = motion.inv;
+  if (!motion.inv && uy < -0.6) motion.inv = true;
+  else if (motion.inv && uy > 0.4) motion.inv = false;
+  if (was !== motion.inv) wantFlipped = !wantFlipped;
+}
+function onScreen() {
+  const a = screenAngle();
+  if ((a === 90 && lastAngle === 270) || (a === 270 && lastAngle === 90)) wantFlipped = !wantFlipped;
+  motion.s180 = a === 180; lastAngle = a;
+}
+if (screen.orientation) screen.orientation.addEventListener('change', onScreen);
+else addEventListener('orientationchange', onScreen);
+const needsAsk = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+if (typeof DeviceOrientationEvent !== 'undefined' && !needsAsk) addEventListener('deviceorientation', onOrient);
+function askMotion() {
+  if (!needsAsk || motion.asked) return;
+  motion.asked = true;
+  DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') addEventListener('deviceorientation', onOrient); }).catch(() => {});
+}
+addEventListener('keydown', e => {
+  if (e.code !== 'Space' || e.repeat) return;
+  e.preventDefault(); wantFlipped = !wantFlipped;
+});
+
+/* ---------- looking up: once inverted, tilt up to the underside of the ground and read ---------- */
+const look = {s: 0, target: 0};
+const upBtn = document.getElementById('up'), downBtn = document.getElementById('down'), passage = document.getElementById('passage');
+const canLook = () => ready && flipped && !anim.on;
+function setPassage() {
+  const t = PASSAGES[Math.floor(Math.random() * PASSAGES.length)];
+  passage.replaceChildren(...t.split(/\n\s*\n/).map(par => { const p = document.createElement('p'); p.textContent = par.trim(); return p; }));
+  passage.scrollTop = 0;
+}
+let uiState = '';
+function updateLookUI() {
+  const st = [canLook() && look.target < 0.5, look.s > 0.5 && look.target > 0.5, look.s > 0.92 && look.target > 0.5].map(Number).join('');
+  if (st === uiState) return;
+  if (st[2] === '1' && uiState[2] !== '1') setPassage();
+  uiState = st;
+  upBtn.classList.toggle('on', st[0] === '1');
+  downBtn.classList.toggle('on', st[1] === '1');
+  passage.classList.toggle('on', st[2] === '1');
+}
+upBtn.addEventListener('click', () => { if (canLook()) look.target = 1; });
+downBtn.addEventListener('click', () => { look.target = 0; });
+cv.addEventListener('wheel', e => {
+  if (!canLook() && look.target === 0) return;
+  e.preventDefault();
+  look.target = Math.min(1, Math.max(0, look.target - e.deltaY * 0.0015));
+}, {passive: false});
+/* the passage scrolls itself; at its ends the wheel carries on to the view */
+passage.addEventListener('wheel', e => {
+  const atTop = passage.scrollTop <= 0, atEnd = passage.scrollTop + passage.clientHeight >= passage.scrollHeight - 1;
+  if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atEnd)) return;
+  e.preventDefault();
+  if (e.deltaY > 0) look.target = Math.min(1, Math.max(0, look.target - e.deltaY * 0.0015));
+}, {passive: false});
+addEventListener('keydown', e => {
+  if (e.code === 'ArrowUp' && canLook()) { e.preventDefault(); look.target = 1; }
+  else if (e.code === 'ArrowDown') { e.preventDefault(); look.target = 0; }
+});
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock();
+let lastT = 0;
+renderer.setAnimationLoop(() => {
+  const now = clock.getElapsedTime(), dt = Math.min(0.05, now - lastT); lastT = now;
+
+  if (!drag) { view.az += view.vel * dt; view.vel *= Math.exp(-3 * dt); }
+  camera.position.set(Math.sin(view.az) * view.dist, EYE, Math.cos(view.az) * view.dist);
+  camera.lookAt(0, EYE, 0);
+  look.s += (look.target - look.s) * Math.min(1, dt * 1.6);
+  if (Math.abs(look.target - look.s) < 1e-4) look.s = look.target;
+  if (look.s > 0) camera.rotateX(ease(look.s) * LOOK_MAX);
+  updateLookUI();
+
+  if (ready && !anim.on) {
+    const wantRoll = motion.active && (motion.inv !== motion.s180);
+    const turn = flipped !== wantFlipped, roll = rollParity !== wantRoll;
+    if (turn || roll) startAnim(turn, roll, now);
+  }
+  if (anim.on) {
+    let t = (now - anim.t0) / anim.dur;
+    if (t >= 1) { t = 1; anim.on = false; }
+    const e = ease(t);
+    qFlip.setFromAxisAngle(anim.axis, anim.g * e).multiply(anim.q0);
+    if (!anim.on) qFlip.normalize();
+    rollDeg = anim.r0 + (anim.r1 - anim.r0) * e;
+    stage.style.transform = rollDeg % 360 ? `rotate(${rollDeg % 360}deg)` : '';
+  }
+
+  spinV += ((flipped && !anim.on ? SPIN_SPEED : 0) - spinV) * Math.min(1, dt * 0.6);
+  spin += spinV * dt;
+  world.quaternion.copy(qFlip);
+  structure.rotation.y = spin;
+  world.updateMatrixWorld(true);
+  invContent.copy(content.matrixWorld).invert();
+
+  for (const a of arms) updateArm(a, now);
+  renderer.render(scene, camera);
+});
+}
+</script>
 </body>
 </html>
