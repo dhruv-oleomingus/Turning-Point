@@ -1267,7 +1267,7 @@ function binding(e, p) {
   if (!id) return null;
   if (/\.phead h2$|^\.feat__title$/.test(s)) return { where: "Section “" + id + "” → heading",
     get: d => sec(d) ? sec(d).heading || "" : undefined, put: (d, v) => { if (sec(d)) sec(d).heading = v.trim(); },
-    shown: (v, d) => { const i = d.sections ? d.sections.findIndex(x => x.id === id) : -1; return (s === ".feat__title" || i < 0 ? "" : ROMAN[i] + ". ") + titleCase(v) + "."; } };
+    shown: v => titleCase(v) + "." };
   if (/\.phead \.lede$/.test(s)) return { where: "Section “" + id + "” → lede",
     get: d => sec(d) ? sec(d).lede || "" : undefined, put: (d, v) => { if (sec(d)) sec(d).lede = v.trim(); } };
   return null;

@@ -7,7 +7,7 @@
 
 window.SITE = {
   "title": "Turning Point",
-  "meta": "4 December 2026 to 21 March 2027",
+  "meta": "",
   "preface": {
     "lead": "Turning Point  by  Anant National University",
     "paragraphs": [
@@ -270,7 +270,7 @@ window.SITE = {
     {
       "id": "credits",
       "label": "Credits",
-      "heading": "THE TEAM",
+      "heading": "The Team",
       "lede": "Turning Point was conceived, designed and built at Anant University.",
       "items": [
         {

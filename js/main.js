@@ -1024,7 +1024,7 @@
     panel.classList.toggle("is-soon", soon);
     panel.dataset.sec = sec.id;   // lets css/layout.css lay out one section on its own
     panel.innerHTML = feature ? featureHTML(sec) :
-      `<header class="box phead"><h2><span class="num">${ROMAN[idx]}.</span>${titleCase(sec.heading || sec.label)}</h2>` +
+      `<header class="box phead"><h2>${titleCase(sec.heading || sec.label)}</h2>` +
       `<div class="phead__aside">${sec.lede && !soon ? `<p class="lede">${sec.lede}</p>` : "<span></span>"}` +
       `<button class="back" type="button" data-go=""><span class="arrow" aria-hidden="true">←</span>Back</button></div></header>` +
       (horiz
