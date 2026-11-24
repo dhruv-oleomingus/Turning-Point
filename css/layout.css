@@ -40,6 +40,11 @@
     top: calc(var(--mt) + 7.34 * var(--u));
     width: calc(1.65 * var(--u));
   }
+  .frame > .biennale {   /* Biennale logo: columns 3–4, rows 8 */
+    left: calc(var(--pl) + 2 * var(--u));
+    top: calc(var(--mt) + 7.341 * var(--u));
+    width: calc(1.4 * var(--u));
+  }
   .frame > .intro {   /* Headline: columns 7–13, rows 2–3 + Intro text */
     left: calc(var(--pl) + 6.25 * var(--u));
     top: calc(var(--mt) + var(--u));
@@ -113,14 +118,18 @@
   }
 
   /* ---------- Section (Credits)  (index.html#credits) ---------- */
-  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) > .panel {   /* Section (.panel): columns 1–14, rows 2–8 */
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) > .panel {   /* Section (.panel): columns 1–14, rows 2–8 (lifted 1 for the heading above it) */
     left: var(--pl);
-    top: calc(var(--mt) + 1.5 * var(--u));
+    top: calc(var(--mt) + .5 * var(--u));
     width: calc(14 * var(--u));
-    height: calc(6.5 * var(--u));
+    height: calc(7.5 * var(--u));
+    padding-top: var(--u);
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .phead {
     position: relative;
+  }
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .panel:not(.is-leaving) > .phead.is-in {
+    clip-path: inset(calc(-1 * var(--u) - 24px) -24px -24px -24px);
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .phead h2 {   /* Team: columns 1–7, rows 1 */
     position: absolute; margin: 0; grid-area: auto;

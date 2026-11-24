@@ -924,13 +924,17 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
     left: calc(var(--pl) + 14.085 * var(--u)); top: calc(var(--mt) + .065 * var(--u));
     width: calc(.71 * var(--u)); height: calc(.71 * var(--u));
   }
-  .frame > .org {                              /* the university logo: bottom left of the pattern, kept clear of it */
+  .frame > .org, .frame > .biennale {          /* the logos: bottom left of the pattern, kept clear of it */
     position: absolute !important; z-index: 3; margin: 0; grid-area: auto; line-height: 0;
     left: calc(var(--pl) + .5 * var(--u)); top: calc(var(--mt) + 6.92 * var(--u));
     width: calc(1.65 * var(--u));
     transition: opacity calc(.25s / var(--speed)) var(--ease);
   }
-  .is-panel .org { opacity: 0; pointer-events: none; }
+  .frame > .biennale {                         /* India Biennale logo, beside the university's (moved with admin/layout.html) */
+    left: calc(var(--pl) + 2 * var(--u)); top: calc(var(--mt) + 7.341 * var(--u));
+    width: calc(1.4 * var(--u));
+  }
+  .is-panel .org, .is-panel .biennale { opacity: 0; pointer-events: none; }
 
   .frame > .intro {
     position: absolute !important;
@@ -1000,12 +1004,12 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
   }
 }
 
-/* the university logo */
-.org img { display: block; width: 100%; height: auto; }
+/* the logos */
+.org img, .biennale img { display: block; width: 100%; height: auto; }
 /* the outline square and the hover pattern are for wide screens */
 @media (max-width: 820px) { .mark, .hoverpat { display: none; } }
-.js .org { clip-path: inset(0 0 100% 0); transform: translateY(.7em); transition: clip-path calc(.35s / var(--speed)) var(--ease), transform calc(.4s / var(--speed)) var(--snap), opacity calc(.25s / var(--speed)) var(--ease); }
-.js .org.is-in { clip-path: inset(-.6em -1em -.6em -1em); transform: none; }
+.js .org, .js .biennale { clip-path: inset(0 0 100% 0); transform: translateY(.7em); transition: clip-path calc(.35s / var(--speed)) var(--ease), transform calc(.4s / var(--speed)) var(--snap), opacity calc(.25s / var(--speed)) var(--ease); }
+.js .org.is-in, .js .biennale.is-in { clip-path: inset(-.6em -1em -.6em -1em); transform: none; }
 
 /* type on narrow screens too */
 .title { font-family: var(--display); font-weight: 700; }
@@ -1162,6 +1166,8 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
   }
   .org { grid-area: org; margin: 0; padding: 0 var(--m) calc(var(--m) * 1.4); width: calc(150px + 2 * var(--m)); line-height: 0; }
   .is-panel .org { display: none; }
+  .biennale { grid-area: org; justify-self: end; align-self: start; margin: 0; padding: 0 var(--m) calc(var(--m) * 1.4); width: calc(128px + 2 * var(--m)); line-height: 0; }
+  .is-panel .biennale { display: none; }
   .title { font-size: clamp(24px, 7vw, 30px); letter-spacing: 0; text-transform: none; color: var(--title-ink); }
   .title a::after { content: "."; }
   .meta { font-family: var(--text); text-transform: lowercase; letter-spacing: 0; font-size: 14px; }
@@ -1196,7 +1202,7 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
     display: block; top: var(--mt); height: calc(8 * var(--u));
     padding: 0; overflow: hidden;
   }
-  .is-panel .frame:has(> .panel.is-feat) > .org { opacity: 0; pointer-events: none; }
+  .is-panel .frame:has(> .panel.is-feat) > :is(.org, .biennale) { opacity: 0; pointer-events: none; }
   .feat { --fd: calc(.2s / var(--speed)); position: relative; width: 100%; height: 100%; }
   .feat__imgbox { position: absolute; left: 0; top: 0; width: calc(11 * var(--u)); height: 100%; }
   .feat__img {
@@ -1273,7 +1279,7 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
 .panel .card p, .panel .card .go { display: none !important; }   /* no description or status on the cards, anywhere */
 @media (min-width: 821px) {
   .frame > .panel.is-cards { top: var(--mt); height: calc(8 * var(--u)); }
-  .is-panel .frame:has(> .panel.is-cards) > .org { opacity: 0; pointer-events: none; }
+  .is-panel .frame:has(> .panel.is-cards) > :is(.org, .biennale) { opacity: 0; pointer-events: none; }
   .panel.is-cards > .phead { display: block; position: relative; height: calc(1.39 * var(--u)); padding: 0; }
   .panel.is-cards .phead h2 { position: absolute; left: 0; top: calc(.95 * var(--u) - .8em); font-size: calc(.44 * var(--u)); }
   .panel.is-cards .phead .lede { display: none; }

@@ -384,6 +384,8 @@ const LOREM = "Turning Point was conceived, designed and built at Anant Universi
 
 function T(label, x, y, w, h, o) { return Object.assign({ type: "text", label, x, y, w, h, font: "text", size: .205, lh: 1.3, color: "ink", align: "left", cols: 1, text: "" }, o || {}); }
 function E(type, label, x, y, w, h, o) { return Object.assign({ type, label, x, y, w, h }, o || {}); }
+/* the India Biennale logo (assets/img/india-biennale-logo.png, 1492 × 702): bottom-aligned beside the university's */
+const BIENNALE_LOGO = () => E("logo", "Biennale logo", 2, 7.341, 1.4, .659, { sel: ".frame > .biennale", ratio: 2.125, src: "../assets/img/india-biennale-logo.png" });
 function strip(outline) { return E("strip", "Pattern strip", 14, 2, 1, 6, { sel: ".sliver", variant: outline ? "outline" : "fill" }); }
 
 const DEFAULT_PAGES = () => [
@@ -391,6 +393,7 @@ const DEFAULT_PAGES = () => [
     E("area", "Right column (.side)", 11, 0, 3, 8, { sel: ".frame > .side" }),
     E("pattern", "Interactive pattern", 0, 1, 6, 7, { sel: ".frame > .stage" }),
     E("logo", "University logo", .5, 6.92, 1.65, .66, { sel: ".frame > .org", ratio: 2.5 }),
+    BIENNALE_LOGO(),
     T("Headline", 6, .97, 6, 1.5, { sel: ".frame > .intro", font: "display-italic", size: .298, lh: 1.2, align: "justify", text: INTRO_HEAD }),
     T("Intro text", 6, 2.62, 4, 4.9, { sel: ".intro p", align: "justify", text: INTRO_BODY }),
     T("Links", 12.4, .3, 1.6, .55, { sel: ".meta", parent: "Right column (.side)", size: .218, lh: 1.05, align: "right", text: "instagram\nyoutube" }),
@@ -437,6 +440,12 @@ const KEY = "tp-layout-console-v1";
 let uid = 1;
 const newId = () => "e" + (uid++).toString(36) + Math.random().toString(36).slice(2, 5);
 function withIds(pages) {
+  // layouts saved before the Biennale logo existed: add it to the home page, after the university logo
+  const home = pages.find(p => p.builtin && (p.kind || p.id) === "home");
+  if (home && !home.els.some(e => e.sel === ".frame > .biennale")) {
+    const at = home.els.findIndex(e => e.sel === ".frame > .org");
+    home.els.splice(at < 0 ? home.els.length : at + 1, 0, BIENNALE_LOGO());
+  }
   pages.forEach(p => p.els.forEach(e => { if (!e.id) e.id = newId(); }));
   // "parent" is given by label in the defaults; turn it into an id
   pages.forEach(p => p.els.forEach(e => {
@@ -605,7 +614,7 @@ function renderEls() {
     if (e.type === "pattern") body = `<span class="ph">${esc(e.label)}<small>indicative area</small></span>`;
     else if (e.type === "strip") body = "";
     else if (e.type === "image") body = CROSS + `<span class="ph">${esc(e.label)}</span>`;
-    else if (e.type === "logo") body = `<img src="../assets/img/anu-logo.png" alt="">`;
+    else if (e.type === "logo") body = `<img src="${esc(e.src || "../assets/img/anu-logo.png")}" alt="">`;
     else if (e.type === "text") {
       const paras = String(e.text || "").split(/\n\s*\n/);
       body = paras.map(t => `<p>${esc(t)}</p>`).join("");
@@ -1079,6 +1088,9 @@ function cssText() {
       }
       if (/^\.phead (h2|\.lede|\.back)$/.test(sel)) {   // section heading parts: placed within the header row
         add(S_(".phead"), [`position: relative;`]);
+        // the header is revealed with a clip that allows 24px of overhang: open it as far up as the highest part
+        const top = Math.min(...p.els.filter(o => o.parent === e.parent && !o.hidden && /^\.phead /.test(o.sel || "")).map(o => o.y)) - (P ? P.y : 0);
+        if (top < 0) add(S_(".panel:not(.is-leaving) > .phead.is-in"), [`clip-path: inset(calc(${fmt(r3(top))} * var(--u) - 24px) -24px -24px -24px);`]);
         const d = [`position: absolute; margin: 0; grid-area: auto;`, ...box(e, P, false), ...typeDecl(e)];
         if (sel === ".phead h2") d.push("white-space: nowrap;");
         if (sel === ".phead .back") d.push(`justify-content: ${e.align === "right" ? "flex-end" : e.align === "center" ? "center" : "flex-start"};`);
@@ -1123,9 +1135,17 @@ function cssText() {
         add(S_(".nav .nav__item"), [`font-family: var(${e.font === "text" ? "--text" : "--display"});`, `font-style: ${e.font === "display-italic" ? "italic" : "normal"};`, `line-height: ${fmt(e.lh || 1)};`]);
         return;
       }
-      const d = box(e, P, e.type !== "text");
+      // a section panel crops what lies outside it (it scrolls): when a heading part sits above its
+      // top edge, the panel starts that much higher and pads its top by the same, so nothing moves
+      let lift = 0;
+      if (/\.panel\b/.test(sel) && !P) {
+        const kids = p.els.filter(o => o.parent === e.id && !o.hidden && /^\.phead /.test(o.sel || ""));
+        if (kids.length) lift = Math.max(0, r3(e.y - Math.min(...kids.map(o => o.y))));
+      }
+      const d = box(lift ? Object.assign({}, e, { y: e.y - lift, h: e.h + lift }) : e, P, e.type !== "text");
+      if (lift) d.push(`padding-top: ${len(lift, "y")};`);
       if (e.type === "text") d.push(...typeDecl(e));
-      add(S_(sel), d, where(e));
+      add(S_(sel), d, where(e) + (lift ? ` (lifted ${fmt(lift)} for the heading above it)` : ""));
     });
   });
 

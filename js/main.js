@@ -26,7 +26,8 @@
         sliver = $("#sliver"), side = $("#side"), sideHot = $("#sideHot"),
         titleEl = $("#title"), introEl = $("#intro"),
         navEl = $("#nav"), navList = $("#navList"), panel = $("#panel"), metaEl = $("#meta"),
-        orgEl = $("#org"), markEl = $("#mark");
+        orgEl = $("#org"), markEl = $("#mark"),
+        logoEls = [orgEl, $("#biennale")].filter(Boolean);
 
   const mqMobile = matchMedia("(max-width: 820px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -298,8 +299,8 @@
   }
   // push one part as its kept smaller squares
   // clip: [left, right] edges beyond which nothing is drawn (the active area)
-  // keepOut: a rectangle (canvas px) left clear for the university logo; sx: how far the row has slid
-  let keepOut = null;
+  // keepOut: rectangles (canvas px) left clear for the logos; sx: how far the row has slid
+  let keepOut = [];
   function pushSub(rects, x, y, w, h, keep, cols, rows, base, clip, sx = 0) {
     const cw = w / cols, ch = h / rows;
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
@@ -307,7 +308,7 @@
       // round the edges to whole pixels so neighbouring squares meet without seams
       let x0 = Math.round(x + i * cw), x1 = Math.round(x + (i + 1) * cw);
       const y0 = Math.round(y + j * ch), y1 = Math.round(y + (j + 1) * ch);
-      if (keepOut && x0 + sx < keepOut.x1 && x1 + sx > keepOut.x0 && y0 < keepOut.y1 && y1 > keepOut.y0) continue;
+      if (keepOut.some(k => x0 + sx < k.x1 && x1 + sx > k.x0 && y0 < k.y1 && y1 > k.y0)) continue;
       if (clip) { x0 = Math.max(x0, clip[0]); x1 = Math.min(x1, clip[1]); if (x1 <= x0) continue; }
       rects.push(Object.assign({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, base));
     }
@@ -364,15 +365,20 @@
     }
     const units = gridUnits(home.w, sh, gapPx);
     const uw = (home.w - gapPx * (units - 1)) / units;
-    // the university logo sits in the area's bottom-left corner: the smaller squares around it
-    // (to LOGO_PAD beyond it, rounded out to whole smaller squares) are left empty
-    keepOut = null;
-    if (!mobile && orgEl) {
-      const lg = relRect(orgEl), sub = (uw + gapPx) / TILE_SUB, pad = LOGO_PAD * (uw + gapPx);
-      if (lg.w > 1) keepOut = {
-        x0: home.x - 1, x1: home.x + Math.ceil((lg.x + lg.w + pad - home.x) / sub) * sub - 1,
-        y0: home.y + Math.floor((lg.y - pad - home.y) / sub) * sub + 1, y1: home.y + home.h + 1
-      };
+    // the logos sit over the pattern: the smaller squares around each (to LOGO_PAD beyond it,
+    // rounded out to whole smaller squares) are left empty; a clear zone that reaches an edge
+    // of the area runs out to that edge, so a logo in a corner sits in a clean notch
+    keepOut = [];
+    if (!mobile) for (const el of logoEls) {
+      const lg = relRect(el), sub = (uw + gapPx) / TILE_SUB, pad = LOGO_PAD * (uw + gapPx);
+      if (lg.w <= 1) continue;
+      let x0 = home.x + Math.floor((lg.x - pad - home.x) / sub) * sub + 1, x1 = home.x + Math.ceil((lg.x + lg.w + pad - home.x) / sub) * sub - 1;
+      let y0 = home.y + Math.floor((lg.y - pad - home.y) / sub) * sub + 1, y1 = home.y + Math.ceil((lg.y + lg.h + pad - home.y) / sub) * sub - 1;
+      if (x0 <= home.x + 1) x0 = home.x - 1;
+      if (x1 >= home.x + home.w - 1) x1 = home.x + home.w + 1;
+      if (y0 <= home.y + 1) y0 = home.y - 1;
+      if (y1 >= home.y + home.h - 1) y1 = home.y + home.h + 1;
+      if (x1 > x0 && y1 > y0) keepOut.push({ x0, x1, y0, y1 });
     }
     for (const b of gridPlan(n, units, false)) {   // (true: two blocks step out of the column, the old layout)
       const row = rows[b.row];                   // a block moves with the row it starts in
@@ -575,7 +581,7 @@
     await wait(T(320));
     navEl.classList.add("is-in");
     metaEl.classList.add("is-in");
-    orgEl && orgEl.classList.add("is-in");
+    logoEls.forEach(el => el.classList.add("is-in"));
     await wait(T(500));
 
     root.classList.remove("is-intro");
