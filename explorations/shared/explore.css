@@ -22,8 +22,6 @@ a { color: inherit; text-decoration: none; }
 }
 .xbar > * { pointer-events: auto; }
 .xbar .back { color: var(--gold); }
-.xbar .back .arrow { display: inline-block; transition: transform .5s var(--ease); }
-.xbar .back:hover .arrow { transform: translateX(-.4em); }
 .xbar .name { color: var(--grey); }
 .xbar .name em { font-family: var(--serif); font-size: 1.5em; letter-spacing: 0; text-transform: none; color: var(--gold); margin-right: .4em; }
 .xbar button { font: inherit; letter-spacing: inherit; text-transform: inherit; background: none; border: 0; padding: 0; color: var(--grey); cursor: pointer; }

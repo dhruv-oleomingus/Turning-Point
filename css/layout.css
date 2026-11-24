@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-24 10:22).
+   css/layout.css — written by admin/layout.html (2026-11-24 14:03).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -34,6 +34,14 @@
     top: calc(var(--mt) + var(--u));
     width: calc(6 * var(--u));
     height: calc(6 * var(--u));
+    --tp-draw: mix;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.48;
+    --tp-holes: edges;
+    --tp-blocks: mixed;
+    --tp-scale: varied;
+    --tp-seed: visit;
+    --tp-rows: 7;
   }
   .frame > .org {   /* University logo: columns 1–2, rows 8 */
     left: var(--pl);
@@ -55,7 +63,7 @@
     max-width: none;
     width: calc(6 * var(--u));
     height: calc(1.5 * var(--u));
-    margin: 0 0 calc(.5 * var(--u));
+    margin: 0 0 var(--u);
     font-size: calc(.298 * var(--u));
     line-height: 1.2;
     font-family: var(--display);
@@ -99,9 +107,9 @@
     color: var(--accent);
     text-align: left;
   }
-  .nav {   /* Menu: columns 12–14, rows 6–8 */
+  .nav {   /* Menu: columns 12–14, rows 6–7 */
     left: 0;
-    top: calc(5.64 * var(--u));
+    top: calc(5 * var(--u));
     width: calc(3 * var(--u));
     font-size: calc(.35 * var(--u));
   }
@@ -115,6 +123,13 @@
     top: calc(var(--mt) + .25 * var(--u));
     width: var(--u);
     height: calc(7.75 * var(--u));
+    --tp-draw: outline;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.25;
+    --tp-holes: scatter;
+    --tp-blocks: rows;
+    --tp-scale: 1;
+    --tp-seed: visit;
   }
   html:not(.is-panel) .frame > .xtext[data-xt="ezjiz"] {   /* Text: columns 7–11, rows 3 (placed text) */
     display: block;
@@ -135,20 +150,41 @@
     top: calc(var(--mt) + 7 * var(--u));
     width: calc(2.25 * var(--u));
     height: var(--u);
+    --tp-draw: mix;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.48;
+    --tp-holes: edges;
+    --tp-blocks: mixed;
+    --tp-scale: varied;
+    --tp-seed: visit;
   }
-  .frame > .xpat[data-pa="home:e10ndl"] {   /* Pattern area: columns 14, rows 8 (pattern area) */
+  .frame > .xpat[data-pa="home:e10ndl"] {   /* Pattern area: columns 14–15, rows 8 (pattern area) */
     display: block;
     left: calc(var(--pl) + 13 * var(--u));
     top: calc(var(--mt) + 7 * var(--u));
-    width: var(--u);
+    width: calc(2 * var(--u));
     height: var(--u);
+    --tp-draw: mix;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.48;
+    --tp-holes: edges;
+    --tp-blocks: mixed;
+    --tp-scale: varied;
+    --tp-seed: visit;
   }
-  .frame > .xpat[data-pa="home:e116ui"] {   /* Pattern area: columns 1–10, rows 1 (pattern area) */
+  .frame > .xpat[data-pa="home:e116ui"] {   /* Pattern area: columns 1–7, rows 1–2 (pattern area) */
     display: block;
     left: var(--pl);
     top: var(--mt);
-    width: calc(10 * var(--u));
-    height: var(--u);
+    width: calc(6.25 * var(--u));
+    height: calc(1.25 * var(--u));
+    --tp-draw: mix;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.48;
+    --tp-holes: edges;
+    --tp-blocks: mixed;
+    --tp-scale: varied;
+    --tp-seed: visit;
   }
 
   /* ---------- Section (Credits)  (index.html#credits) ---------- */
@@ -221,6 +257,13 @@
     top: calc(var(--mt) + 2 * var(--u));
     width: var(--u);
     height: calc(6 * var(--u));
+    --tp-draw: outline;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.25;
+    --tp-holes: scatter;
+    --tp-blocks: rows;
+    --tp-scale: 1;
+    --tp-seed: visit;
   }
 
   /* ---------- Structure & Process  (index.html#structure) ---------- */
@@ -294,6 +337,13 @@
     top: calc(var(--mt) + 2 * var(--u));
     width: var(--u);
     height: calc(6 * var(--u));
+    --tp-draw: outline;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.25;
+    --tp-holes: scatter;
+    --tp-blocks: rows;
+    --tp-scale: 1;
+    --tp-seed: visit;
   }
 
   /* ---------- Explore (cards)  (index.html#explore) ---------- */
@@ -351,5 +401,12 @@
     top: calc(var(--mt) + 2 * var(--u));
     width: var(--u);
     height: calc(6 * var(--u));
+    --tp-draw: outline;
+    --tp-outlines: 0.2;
+    --tp-empty: 0.25;
+    --tp-holes: scatter;
+    --tp-blocks: rows;
+    --tp-scale: 1;
+    --tp-seed: visit;
   }
 }

@@ -955,7 +955,7 @@
     panel.innerHTML = feature ? featureHTML(sec) :
       `<header class="box phead"><h2>${titleCase(sec.heading || sec.label)}</h2>` +
       `<div class="phead__aside">${sec.lede && !soon ? `<p class="lede">${sec.lede}</p>` : "<span></span>"}` +
-      `<button class="back" type="button" data-go=""><span class="arrow" aria-hidden="true">←</span>Back</button></div></header>` +
+      `<button class="back" type="button" data-go="">Back</button></div></header>` +
       (horiz
         ? `<div class="htrack" tabindex="0">${itemsHTML(sec.items, true)}</div>` +
           `<div class="hfoot"><span class="hfoot__hint">Scroll</span><div class="rail__bar"><i></i></div>` +
@@ -1373,7 +1373,7 @@
       const body = el.querySelector(".preface__body"), fn = el.querySelector("feFuncA");
       if (reduced || !fn) { el.remove(); return; }
       body.style.filter = "url(#dissolve)";
-      const t0 = performance.now(), DUR = T(1500);
+      const t0 = performance.now(), DUR = T(250);   // the opening text dissolves quickly (½ s at --speed .5; it was 3 s)
       (function step(now) {
         const k = Math.min(1, (now - t0) / DUR), th = k * k * (3 - 2 * k) * 1.04 - .02;
         fn.setAttribute("intercept", (.5 - 30 * th).toFixed(3));

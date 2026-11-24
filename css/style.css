@@ -432,9 +432,7 @@ a:hover .roll .ch, a:focus-visible .roll .ch { transform: translateY(-1.1em); }
   cursor: pointer;
   transition: background calc(.17s / var(--speed)) var(--ease), color calc(.17s / var(--speed)) var(--ease), border-color calc(.17s / var(--speed)) var(--ease);
 }
-.phead .back .arrow { display: inline-block; font-size: 1.15em; line-height: 1; transition: transform calc(.23s / var(--speed)) var(--ease-out); }
 .phead .back:hover, .phead .back:focus-visible { background: var(--ink); color: var(--paper); text-shadow: none; }
-.phead .back:hover .arrow { transform: translateX(-.35em); }
 
 /* text */
 .box-text h3, .box-links h3 {
@@ -1054,7 +1052,6 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
   letter-spacing: 0; text-transform: none; border: 0; padding: 0; gap: .35em; background: none;
 }
 .phead .back::after { content: "."; margin-left: -.35em; }
-.phead .back .arrow { color: var(--accent); font-style: normal; }
 .phead .back:hover, .phead .back:focus-visible { background: none; color: var(--accent); }
 .box-text h3, .box-links h3 {
   font-family: var(--display); font-style: italic; font-weight: 700; font-size: 1.3em; line-height: 1.15;
@@ -1298,7 +1295,6 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
   .panel.is-cards .phead h2 { position: absolute; left: 0; top: calc(.95 * var(--u) - .8em); font-size: calc(.44 * var(--u)); }
   .panel.is-cards .phead .lede { display: none; }
   .panel.is-cards .phead .back { position: absolute; right: 0; top: calc(1.23 * var(--u) - .8em); font-size: calc(.3 * var(--u)); }
-  .panel.is-cards .phead .back .arrow { display: none; }
   .panel.is-cards .htrack {
     width: calc(13 * var(--u)); height: calc(6.61 * var(--u));
     gap: calc(.41 * var(--u)); padding-right: calc(9 * var(--u));

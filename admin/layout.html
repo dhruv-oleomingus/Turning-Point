@@ -446,7 +446,7 @@ const DEFAULT_PAGES = () => [
     E("area", "Section (.panel)", 0, 1, 14, 7, { sel: ".frame > .panel" }),
     T("Section title", 0, 1.38, 6, .5, { sel: ".phead h2", parent: "Section (.panel)", font: "display", size: .44, lh: 1, text: "4 Credits." }),
     T("Lede", 6, 1.2, 4, .65, { sel: ".phead .lede", parent: "Section (.panel)", text: "Turning Point was conceived, designed and built at Anant University." }),
-    T("Back", 11, 1.5, 3, .36, { sel: ".phead .back", parent: "Section (.panel)", font: "display-italic", size: .32, lh: 1, align: "right", text: "← Back." }),
+    T("Back", 11, 1.5, 3, .36, { sel: ".phead .back", parent: "Section (.panel)", font: "display-italic", size: .32, lh: 1, align: "right", text: "Back." }),
     T("Content (credits)", 0, 2, 14, 3.4, { sel: ".panel > .credits", parent: "Section (.panel)", size: .19, lh: 1.32, cols: 3, text: "Concept & design\nName Surname\nName Surname\nName Surname\nName Surname\n\nPattern & computation\nName Surname\nName Surname\nName Surname\n\nFabrication\nName Surname\nName Surname\n\nSite & structure\nName Surname\nName Surname\nName Surname" }),
     strip(true)
   ]},
@@ -502,6 +502,7 @@ function withIds(pages) {
   // parts that live inside the column or a panel on the site are always placed inside it here too
   pages.forEach(p => p.els.forEach(e => { const c = domContainer(e, p); if (c && c.id !== "_side") e.parent = c.id; }));
   pages.forEach(p => p.els.forEach(e => ensureTp(e, p)));
+  pages.forEach(p => p.els.forEach(e => { if (/\.back$/.test(e.sel || "") && /^←\s*/.test(e.text || "")) e.text = e.text.replace(/^←\s*/, ""); }));   // back buttons lost their arrow
   return pages;
 }
 
@@ -1018,7 +1019,8 @@ $("pageDel").addEventListener("click", () => {
 });
 $("pageReset").addEventListener("click", () => {
   const p = page(); if (!confirm("Put “" + p.name + "” back as the site lays it out now? Your changes to this page are undoable.")) return;
-  const fresh = withIds(DEFAULT_PAGES()).find(q => q.id === p.id); p.els = fresh.els; selId = null; commit(); render();
+  const kind = p.kind || p.id;
+  p.els = kind === p.id ? withIds(DEFAULT_PAGES()).find(q => q.id === p.id).els : elementsFor(kind, p); selId = null; commit(); render();
 });
 
 /* element list */
@@ -1139,9 +1141,12 @@ const SCOPES = {
   explore: { pre: "html.is-panel", frame: ".frame:has(> .panel.is-cards)" }
 };
 function scopeOf(p) {
-  const kind = p.kind || p.id;
-  if (!p.builtin && kind !== "home" && /^#[\w-]+$/.test(p.hash || "")) return { pre: "html.is-panel", frame: `.frame:has(> .panel[data-sec="${p.hash.slice(1)}"])` };
-  return SCOPES[kind] || SCOPES.section;
+  const kind = p.kind || p.id, id = (p.hash || "").replace(/^#/, "");
+  // the built-in page of a kind (Section (Credits), Structure & Process, Explore) is the default for every section of that kind;
+  // any other page — a copy, or a built-in page switched to another kind — is for its own section only
+  if (kind === "home" || (p.builtin && p.id === kind) || !/^[\w-]+$/.test(id)) return SCOPES[kind] || SCOPES.section;
+  const panel = { section: ".panel:not(.is-feat):not(.is-cards)", feature: ".panel.is-feat", explore: ".panel.is-cards" }[kind] || ".panel";
+  return { pre: "html.is-panel", frame: `.frame:has(> ${panel}[data-sec="${id}"])` };
 }
 const scoped = (sc, sel) => sel.split(",").map(x => { x = x.trim(); return x.startsWith(".frame") ? `${sc.pre} ${sc.frame}${x.slice(6)}` : `${sc.pre} ${sc.frame} ${x}`; }).join(",\n  ");
 const CSSCOL = { ink: "var(--ink)", accent: "var(--accent)", white: "#fff", grey: "var(--grey)" };
@@ -1363,8 +1368,51 @@ function shownText(e, p) {
   return String(t).replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
 }
 // on opening: take the words from content.js, except where they were changed here and not yet saved
+/* A section's layout is set in the content editor (js/content.js): "feature" (big image + text column),
+   "horizontal" with only project cards (the Explore cards), or anything else (a scrolling section),
+   decided as js/main.js decides. When a section's page here is of another kind, it is switched to match;
+   its old elements are kept (p.stash) and come back if the section is switched back. */
+function kindForSection(sec) {
+  if (sec.comingSoon) return "section";
+  if (sec.layout === "feature") return "feature";
+  const items = sec.items || [];
+  if (sec.layout === "horizontal" && items.length && items.every(it => it.type === "project")) return "explore";
+  return "section";
+}
+function elementsFor(kind, p) {
+  if (kind !== "section") return withIds(DEFAULT_PAGES()).find(q => q.id === kind).els;
+  // a scrolling section starts as the other sections are laid out now (the Section (Credits) page)
+  const tmpl = S.pages.find(q => q.builtin && q.id === "section" && (q.kind || q.id) === "section");
+  const src = JSON.parse(JSON.stringify(tmpl ? tmpl.els : withIds(DEFAULT_PAGES()).find(q => q.id === "section").els)), ids = {};
+  src.forEach(e => { ids[e.id] = newId(); });
+  return src.map(e => {
+    e.id = ids[e.id]; if (e.parent) e.parent = ids[e.parent] || e.parent; delete e.textFrom;
+    // the credits list is the Credits page's own: here it stands for this section's content
+    if (e.sel === ".panel > .credits") return { type: "area", label: "Content (scrolls)", x: e.x, y: e.y, w: e.w, h: e.h, id: e.id, parent: e.parent };
+    if (e.sel === ".phead h2") e.label = "Section title";
+    return e;
+  });
+}
+function syncKinds() {
+  if (!SITE) return;
+  const done = [];
+  S.pages.forEach(p => {
+    const id = (p.hash || "").replace(/^#/, "");
+    if ((p.kind || p.id) === "home" || !/^[\w-]+$/.test(id)) return;
+    const sec = SITE.sections.find(x => x.id === id); if (!sec) return;
+    const want = kindForSection(sec), have = p.kind || p.id;
+    if (want === have) return;
+    p.stash = p.stash || {}; p.stash[have] = p.els;
+    p.els = p.stash[want] || elementsFor(want, p); delete p.stash[want];
+    p.kind = want; done.push(p.name);
+  });
+  if (!done.length) return;
+  selId = null; commit(); render();
+  toast("“" + done.join("”, “") + "” changed layout in the content editor — switched here to match (its old layout is kept). Save to site to apply.");
+}
 function pullText() {
   if (!SITE) return;
+  syncKinds();
   let changed = false;
   S.pages.forEach(p => p.els.forEach(e => {
     const b = binding(e, p); if (!b) return;
@@ -1470,7 +1518,7 @@ fetch("layout.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).th
   if (!d || !Array.isArray(d.pages) || !d.pages.length) return;
   if (hadLocal && (d.savedAt || 0) <= (S.editedAt || 0)) return;
   loadData(d); S.savedAt = S.editedAt = d.savedAt || Date.now(); last = snapshot(); hist.length = fut.length = 0;
-  selId = null; save(); render(); pullText(); toast("Opened the layout saved with the site");
+  selId = null; save(); render(); toast("Opened the layout saved with the site"); pullText();
 }).catch(() => {});
 
 let exMode = "css";
