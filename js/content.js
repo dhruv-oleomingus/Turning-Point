@@ -357,5 +357,13 @@ window.SITE = {
       ],
       "layout": "horizontal"
     }
+  ],
+  "texts": [
+    {
+      "id": "ezjiz",
+      "page": "home",
+      "label": "Text",
+      "text": "December 4, 2026, to March 21, 2027."
+    }
   ]
 };

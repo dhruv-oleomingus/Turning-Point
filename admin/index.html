@@ -400,6 +400,15 @@
     main.append(h("hr"), h("h3", {}, "Social links (shown beside the title)"));
     data.socials = data.socials || [];
     main.append(fieldEl(data, "socials", "pairs:label:url", " "));
+
+    // texts added and positioned in the layout editor (admin/layout.html)
+    if ((data.texts || []).length) {
+      main.append(h("hr"), h("h3", {}, "Placed texts"),
+        h("p", { class: "sub", html: "Added and positioned in the <a href='layout.html'>layout editor</a>; the words can be changed in either. HTML allowed; a blank line starts a new paragraph." }));
+      main.append(h("div", { class: "list" }, data.texts.map(t => h("div", {},
+        h("p", { class: "sub" }, (t.label || "Text") + " — " + (t.page === "home" || !t.page ? "home page" : "section " + t.page)),
+        h("textarea", { rows: 2, value: t.text || "", oninput: e => { t.text = e.target.value; setDirty(); } })))));
+    }
   }
 
   function renderSection(main, sec, si) {
@@ -497,6 +506,7 @@
      Backends: local folder (File System Access API) and GitHub
      ====================================================================== */
   let backend = null;
+  let loadedText = null;   // content.js as this editor last read or wrote it
 
   async function getHandle(dir, path, create) {
     const parts = path.split("/").filter(Boolean);
@@ -555,7 +565,7 @@
     try {
       const text = await be.read("js/content.js");
       if (dirty && !confirm("Load the content from there? Your unsaved edits here will be replaced.")) { backend = be; renderStatus(); return; }
-      data = parseContent(text);
+      data = parseContent(text); loadedText = text;
       backend = be; dirty = false; open.clear();
       render();
       toast("Connected — " + be.label);
@@ -595,7 +605,19 @@
     if (!backend) return toast("Open the site folder or connect GitHub first — or use Download.", true);
     const btn = $("#save"); btn.disabled = true; btn.textContent = "Saving…";
     try {
+      // the layout editor writes content.js too: don't overwrite what it saved without asking
+      let cur = null;
+      try { cur = await backend.read("js/content.js"); } catch {}
+      if (cur != null && loadedText != null && cur !== loadedText && cur !== serialise()) {
+        if (!confirm("js/content.js has changed since this editor opened it — probably saved from the layout editor.\n\nOK: save anyway, replacing those changes with yours.\nCancel: don't save yet.")) {
+          if (confirm("Load the newer content.js into this editor instead? Your unsaved edits here will be lost.")) {
+            data = parseContent(cur); loadedText = cur; dirty = false; open.clear(); render(); toast("Loaded the newer content.js");
+          }
+          btn.textContent = "Save"; renderStatus(); return;
+        }
+      }
       await backend.write("js/content.js", serialise());
+      loadedText = serialise();
       setDirty(false);
       toast(backend.label.startsWith("GitHub") ? "Saved to GitHub — the live site updates in about a minute." : "Saved to js/content.js");
     } catch (e) { console.error(e); toast(e.message || String(e), true); }

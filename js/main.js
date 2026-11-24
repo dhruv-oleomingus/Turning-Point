@@ -66,6 +66,14 @@
 
   introEl.innerHTML = (SITE.intro || []).map((p, i) => `<p style="--p:${i}">${p}</p>`).join("");
 
+  // placed texts (added in admin/layout.html, words in content.js): css/layout.css positions each one
+  // on wide screens; on phones the home page's ones follow the introduction
+  const xparas = t => String(t || "").split(/\n\s*\n/).map(x => x.trim()).filter(Boolean).map(x => `<div class="xp">${x}</div>`).join("");
+  (SITE.texts || []).forEach(t => {
+    frame.insertAdjacentHTML("beforeend", `<div class="xtext" data-xt="${esc(t.id)}" data-page="${esc(t.page || "home")}">${xparas(t.text)}</div>`);
+    if ((t.page || "home") === "home") introEl.insertAdjacentHTML("beforeend", `<div class="xtext-m">${xparas(t.text)}</div>`);
+  });
+
   const roll = txt => `<span class="roll">${[...txt].map((c, i) =>
     `<span class="ch" style="--i:${i}">${c}</span>`).join("")}</span>`;
   navList.innerHTML = SITE.sections.map((s, i) =>

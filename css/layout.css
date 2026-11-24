@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-23 16:00).
+   css/layout.css — written by admin/layout.html (2026-11-24 10:05).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -29,11 +29,11 @@
     width: calc(3 * var(--u));
     height: calc(8 * var(--u));
   }
-  .frame > .stage {   /* Interactive pattern: columns 1–6, rows 1–8 */
+  .frame > .stage {   /* Interactive pattern: columns 1–6, rows 1–7 */
     left: var(--pl);
     top: var(--mt);
     width: calc(6 * var(--u));
-    height: calc(8 * var(--u));
+    height: calc(7 * var(--u));
   }
   .frame > .org {   /* University logo: columns 1–2, rows 8 */
     left: var(--pl);
@@ -42,20 +42,20 @@
   }
   .frame > .biennale {   /* Biennale logo: columns 3–4, rows 8 */
     left: calc(var(--pl) + 2 * var(--u));
-    top: calc(var(--mt) + 7.341 * var(--u));
-    width: calc(1.4 * var(--u));
+    top: calc(var(--mt) + 7.294 * var(--u));
+    width: calc(1.5 * var(--u));
   }
   .frame > .intro {   /* Headline: columns 7–13, rows 2–3 + Intro text */
     left: calc(var(--pl) + 6.25 * var(--u));
     top: calc(var(--mt) + var(--u));
     width: calc(6 * var(--u));
-    height: calc(6.5 * var(--u));
+    height: calc(7 * var(--u));
   }
   .intro p:first-of-type {
     max-width: none;
     width: calc(6 * var(--u));
     height: calc(1.5 * var(--u));
-    margin: 0 0 calc(.1 * var(--u));
+    margin: 0 0 calc(.5 * var(--u));
     font-size: calc(.298 * var(--u));
     line-height: 1.2;
     font-family: var(--display);
@@ -77,7 +77,7 @@
   }
   .meta {   /* Links: columns 13–14, rows 1 */
     left: calc(1.4 * var(--u));
-    top: calc(.3 * var(--u));
+    top: calc(.2 * var(--u));
     width: calc(1.6 * var(--u));
     font-size: calc(.2 * var(--u));
     line-height: 1.05;
@@ -115,6 +115,19 @@
     top: calc(var(--mt) + .25 * var(--u));
     width: var(--u);
     height: calc(7.75 * var(--u));
+  }
+  html:not(.is-panel) .frame > .xtext[data-xt="ezjiz"] {   /* Text: columns 7–11, rows 3 (placed text) */
+    display: block;
+    left: calc(var(--pl) + 6.25 * var(--u));
+    top: calc(var(--mt) + 2.25 * var(--u));
+    width: calc(4 * var(--u));
+    font-size: calc(.205 * var(--u));
+    line-height: 1.3;
+    font-family: var(--text);
+    font-style: normal;
+    font-weight: 400;
+    color: var(--ink);
+    text-align: left;
   }
 
   /* ---------- Section (Credits)  (index.html#credits) ---------- */

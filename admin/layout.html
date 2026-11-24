@@ -323,6 +323,7 @@
       <div id="iTextBox">
         <h4>Type</h4>
         <textarea id="iText" placeholder="Text (blank line = new paragraph)"></textarea>
+        <p class="note" id="iTextSrc"></p>
         <div class="row"><label for="iFont">Face</label>
           <select id="iFont"><option value="text">Text — Roboto</option><option value="display">Title — Noto Serif Bold</option><option value="display-italic">Title — Noto Serif Bold Italic</option></select></div>
         <div class="row"><label for="iSize">Size</label><span class="unit"><input type="number" id="iSize" step=".005" min=".05"><span>u</span></span></div>
@@ -386,6 +387,19 @@ function T(label, x, y, w, h, o) { return Object.assign({ type: "text", label, x
 function E(type, label, x, y, w, h, o) { return Object.assign({ type, label, x, y, w, h }, o || {}); }
 /* the India Biennale logo (assets/img/india-biennale-logo.png, 1492 × 702): bottom-aligned beside the university's */
 const BIENNALE_LOGO = () => E("logo", "Biennale logo", 2, 7.341, 1.4, .659, { sel: ".frame > .biennale", ratio: 2.125, src: "../assets/img/india-biennale-logo.png" });
+/* parts that sit inside another part on the site — they are always placed against it,
+   whatever "Placed inside" says (the column holds the links, title and menu; a section's
+   panel holds its header and content) */
+const IN_SIDE = /^\.(meta|title|nav)$/, IN_PANEL = /^\.phead |^\.panel > /;
+function domContainer(e, p) {
+  const s = e.sel || "", want = IN_SIDE.test(s) ? ".frame > .side" : IN_PANEL.test(s) ? ".frame > .panel" : null;
+  if (!want) return null;
+  const c = p.els.find(o => o.sel === want && o.type === "area");
+  if (c) return c;
+  // no column in the console: the site's own (style.css) is where the default puts it
+  return want === ".frame > .side" ? Object.assign(E("area", "Right column (.side)", 11, 0, 3, 8, { sel: want }), { id: "_side" }) : null;
+}
+const STRUCTURAL = /^\.frame > \.(side|panel)\b/;   // these hold other parts: move or hide them, don't delete them
 function strip(outline) { return E("strip", "Pattern strip", 14, 2, 1, 6, { sel: ".sliver", variant: outline ? "outline" : "fill" }); }
 
 const DEFAULT_PAGES = () => [
@@ -446,6 +460,12 @@ function withIds(pages) {
     const at = home.els.findIndex(e => e.sel === ".frame > .org");
     home.els.splice(at < 0 ? home.els.length : at + 1, 0, BIENNALE_LOGO());
   }
+  // a right column that was deleted comes back; an unnamed container drawn where it was becomes it again
+  if (home && !home.els.some(e => e.sel === ".frame > .side")) {
+    const redrawn = home.els.find(e => e.type === "area" && !e.sel && Math.abs(e.x - 11) < .6 && Math.abs(e.w - 3) < .6);
+    if (redrawn) Object.assign(redrawn, { label: "Right column (.side)", sel: ".frame > .side" });
+    else home.els.unshift(E("area", "Right column (.side)", 11, 0, 3, 8, { sel: ".frame > .side" }));
+  }
   pages.forEach(p => p.els.forEach(e => { if (!e.id) e.id = newId(); }));
   // "parent" is given by label in the defaults; turn it into an id
   pages.forEach(p => p.els.forEach(e => {
@@ -453,6 +473,8 @@ function withIds(pages) {
       const par = p.els.find(o => o.label === e.parent); e.parent = par ? par.id : "";
     }
   }));
+  // parts that live inside the column or a panel on the site are always placed inside it here too
+  pages.forEach(p => p.els.forEach(e => { const c = domContainer(e, p); if (c && c.id !== "_side") e.parent = c.id; }));
   return pages;
 }
 
@@ -616,8 +638,7 @@ function renderEls() {
     else if (e.type === "image") body = CROSS + `<span class="ph">${esc(e.label)}</span>`;
     else if (e.type === "logo") body = `<img src="${esc(e.src || "../assets/img/anu-logo.png")}" alt="">`;
     else if (e.type === "text") {
-      const paras = String(e.text || "").split(/\n\s*\n/);
-      body = paras.map(t => `<p>${esc(t)}</p>`).join("");
+      body = String(shownText(e, page())).split(/\n\s*\n/).map(t => `<p>${esc(t)}</p>`).join("");
     } else if (e.type === "card") {
       body = `<div class="media">${CROSS}</div><div class="num" style="font-size:${(e.numSize || .53) * m.uw}px;margin:${.2 * m.uw}px 0 ${.05 * m.uw}px">${esc(e.num)}</div>` +
              `<div class="ttl" style="font-size:${(e.ttlSize || .42) * m.uw}px">${esc(e.ttl)}</div>`;
@@ -727,6 +748,10 @@ function renderInsp() {
   $("iRead").innerHTML = spanText(e); $("iLock").checked = !!e.locked;
   $("iTextBox").hidden = e.type !== "text"; $("iCardBox").hidden = e.type !== "card"; $("iVarRow").hidden = e.type !== "strip";
   if (e.type === "text") {
+    const b = binding(e, page());
+    $("iTextSrc").innerHTML = !b ? "Only a stand-in here: give it no selector to make it a placed text on the site."
+      : b.custom ? "A placed text: shown on the site here. Also editable in the content editor (Site → Placed texts). Saved to <code>js/content.js</code>."
+      : "Shared with the content editor — <b>" + esc(b.where) + "</b>. Saved to <code>js/content.js</code>.";
     set("iText", e.text); set("iFont", e.font); set("iSize", e.size); set("iLh", e.lh); set("iColor", e.color); set("iAlign", e.align); set("iCols", e.cols || 1);
     $("iSize").title = (e.size * M().uw).toFixed(1) + " px at this size";
   }
@@ -736,6 +761,8 @@ function renderInsp() {
   $("iParent").innerHTML = `<option value="">the grid (frame)</option>` +
     page().els.filter(o => o.id !== e.id && o.type === "area").map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join("");
   $("iParent").value = e.parent || "";
+  const box = domContainer(e, page());
+  $("iParent").disabled = !!box; $("iParent").title = box ? "On the site this is always inside “" + box.label + "”" : "";
 }
 function updUndo() { $("undo").disabled = !hist.length; $("redo").disabled = !fut.length; }
 const gfHref = (fam, axes) => "https://fonts.googleapis.com/css2?family=" + encodeURIComponent(fam.trim()).replace(/%20/g, "+") + ":" + axes + "&display=swap";
@@ -973,7 +1000,9 @@ $("iSnap").addEventListener("click", () => { const e = sel(); if (e) { snapEl(e)
 function move(dir) { const p = page(), i = p.els.findIndex(e => e.id === selId), j = i + dir; if (i < 0 || j < 0 || j >= p.els.length) return; [p.els[i], p.els[j]] = [p.els[j], p.els[i]]; commit(); render(); }
 $("iFwd").addEventListener("click", () => move(1)); $("iBack").addEventListener("click", () => move(-1));
 function dup() { const e = sel(); if (!e) return; const c = JSON.parse(JSON.stringify(e)); c.id = newId(); c.label += " copy"; c.x = r3(c.x + 1); c.y = r3(c.y); c.locked = false; const p = page(); p.els.splice(p.els.indexOf(e) + 1, 0, c); selId = c.id; commit(); render(); }
-function del() { const e = sel(); if (!e) return; const p = page(); p.els = p.els.filter(o => o !== e); p.els.forEach(o => { if (o.parent === e.id) o.parent = ""; }); selId = null; commit(); render(); }
+function del() { const e = sel(); if (!e) return;
+  if (STRUCTURAL.test(e.sel || "")) { toast("“" + e.label + "” holds other parts of the site — move, resize or hide it (●) instead of deleting it"); return; }
+  const p = page(); p.els = p.els.filter(o => o !== e); p.els.forEach(o => { if (o.parent === e.id) o.parent = ""; }); selId = null; commit(); render(); }
 $("iDup").addEventListener("click", dup); $("iDel").addEventListener("click", del);
 
 /* keys */
@@ -1071,8 +1100,12 @@ function cssText() {
     rules.set(`/* page ${p.id} */`, { comment: true, page: p });
     p.els.forEach(e => {
       if (e.hidden) return;
-      const P = parentOf(e);
+      const P = domContainer(e, p) || parentOf(e);
       if (!e.sel) {
+        if (e.type === "text") {   // a placed text: js/main.js puts it on the site from content.js (SITE.texts)
+          add(scoped(isHome ? SCOPES.home : sc, `.frame > .xtext[data-xt="${e.id}"]`), [`display: block;`, ...box(e, null, false), ...typeDecl(e)], where(e) + " (placed text)");
+          return;
+        }
         if (e.type !== "card") notes.push(`${p.name} · ${where(e)} — no selector, not written`);
         return;
       }
@@ -1187,6 +1220,103 @@ function jsonText() {
 }
 
 /* =====================================================================
+   9b. Text shared with the content editor: js/content.js holds the words,
+       this console holds where they go. Each text part is bound to a field;
+       the console reads them on opening and writes changed ones back on
+       "Save to site". Texts with no selector are "placed texts" (SITE.texts).
+   ===================================================================== */
+const CONTENT_HEADER = `/* =====================================================================
+   TURNING POINT — site content
+   Edited with admin/index.html — or by hand: it is plain JavaScript.
+   Box types: text, image, carousel, video, embed, project, event, credits, links
+   (see README.md). Paths are relative to index.html.
+   ===================================================================== */
+
+`;
+let SITE = null;   // js/content.js as last read
+function parseContent(text) {
+  const w = {};
+  new Function("window", text + "\n;")(w);
+  if (!w.SITE || !Array.isArray(w.SITE.sections)) throw new Error("js/content.js does not define window.SITE");
+  return w.SITE;
+}
+const ROMAN = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"];
+const SMALL = /^(a|an|and|of|the|in|for|to|at|on|by|with)$/;
+const titleCase = t => t !== t.toUpperCase() ? t : t.toLowerCase().split(" ").map((w, i) => i && SMALL.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+const paras = v => String(v || "").split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
+const pageKey = p => (p.kind || p.id) === "home" ? "home" : ((p.hash || "").replace(/^#/, "") || p.id);
+function binding(e, p) {
+  if (e.type !== "text") return null;
+  const s = e.sel || "";
+  if (!s) return { custom: true, where: "Placed texts",
+    get: d => { const t = (d.texts || []).find(x => x.id === e.id); return t ? t.text : undefined; },
+    put: (d, v) => { d.texts = d.texts || []; let t = d.texts.find(x => x.id === e.id); if (!t) d.texts.push(t = { id: e.id }); t.page = pageKey(p); t.label = e.label; t.text = v; } };
+  if (s === ".frame > .intro") return { where: "Introduction, first paragraph",
+    get: d => (d.intro || [])[0] || "", put: (d, v) => { d.intro = d.intro || []; d.intro[0] = v.trim(); } };
+  if (s === ".intro p") return { where: "Introduction, the paragraphs after the first",
+    get: d => (d.intro || []).slice(1).join("\n\n"), put: (d, v) => { d.intro = [(d.intro || [])[0] || "", ...paras(v)]; } };
+  if (s === ".title") return { where: "Title", get: d => d.title || "", put: (d, v) => { d.title = v.trim(); }, shown: v => v + "." };
+  if (s === ".meta") return { where: "Line beside the title (social links are edited there too)",
+    get: d => d.meta || "", put: (d, v) => { d.meta = v.trim(); },
+    shown: (v, d) => [v, ...(d.socials || []).map(x => String(x.label || "").toLowerCase())].filter(Boolean).join("\n") };
+  if (s === ".nav") return { where: "Section names, one per line",
+    get: d => d.sections.map(x => x.label).join("\n"),
+    put: (d, v) => v.split("\n").map(x => x.trim().replace(/\.$/, "")).filter(Boolean).forEach((l, i) => { if (d.sections[i]) d.sections[i].label = l; }),
+    shown: v => v.split("\n").map(x => x.trim() ? x.trim().replace(/\.$/, "") + "." : x).join("\n") };
+  const id = (p.hash || "").replace(/^#/, ""), sec = d => d.sections.find(x => x.id === id);
+  if (!id) return null;
+  if (/\.phead h2$|^\.feat__title$/.test(s)) return { where: "Section “" + id + "” → heading",
+    get: d => sec(d) ? sec(d).heading || "" : undefined, put: (d, v) => { if (sec(d)) sec(d).heading = v.trim(); },
+    shown: (v, d) => { const i = d.sections ? d.sections.findIndex(x => x.id === id) : -1; return (s === ".feat__title" || i < 0 ? "" : ROMAN[i] + ". ") + titleCase(v) + "."; } };
+  if (/\.phead \.lede$/.test(s)) return { where: "Section “" + id + "” → lede",
+    get: d => sec(d) ? sec(d).lede || "" : undefined, put: (d, v) => { if (sec(d)) sec(d).lede = v.trim(); } };
+  return null;
+}
+// what the canvas shows for a text part: the words as the site sets them, without HTML tags
+function shownText(e, p) {
+  const b = binding(e, p), v = e.text || "";
+  const t = b && b.shown ? b.shown(v, SITE || {}) : v;
+  return String(t).replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
+}
+// on opening: take the words from content.js, except where they were changed here and not yet saved
+function pullText() {
+  if (!SITE) return;
+  let changed = false;
+  S.pages.forEach(p => p.els.forEach(e => {
+    const b = binding(e, p); if (!b) return;
+    const v = b.get(SITE); if (v === undefined) return;
+    if ((e.textFrom === undefined || e.text === e.textFrom) && e.text !== v) { e.text = v; changed = true; }
+    if (e.textFrom !== v) { e.textFrom = v; changed = true; }
+  }));
+  if (changed) { last = snapshot(); save(); render(); }
+}
+// on saving: write the words changed here into d (a parsed content.js); take the rest from it
+function applyText(d) {
+  let n = 0; const custom = new Set();
+  S.pages.forEach(p => p.els.forEach(e => {
+    const b = binding(e, p); if (!b) return;
+    if (b.custom) custom.add(e.id);
+    const edited = e.textFrom === undefined ? !!b.custom : e.text !== e.textFrom;
+    const before = b.get(d);
+    if (edited) b.put(d, e.text || "");
+    const after = b.get(d);
+    if (after !== undefined) { if (edited && after !== before) n++; e.text = after; e.textFrom = after; }
+  }));
+  if (d.texts) { const k = d.texts.length; d.texts = d.texts.filter(t => custom.has(t.id)); n += k - d.texts.length; if (!d.texts.length) delete d.texts; }
+  return n;
+}
+const contentText = d => CONTENT_HEADER + "window.SITE = " + JSON.stringify(d, null, 2) + ";\n";
+async function pushText(dir) {
+  const js = await dir.getDirectoryHandle("js");
+  const d = parseContent(await (await (await js.getFileHandle("content.js")).getFile()).text());
+  const before = JSON.stringify(d), n = applyText(d);
+  if (JSON.stringify(d) !== before) await writeFile(dir, ["js", "content.js"], contentText(d));
+  SITE = d;
+  return n;
+}
+fetch("../js/content.js", { cache: "no-store" }).then(r => r.ok ? r.text() : null).then(t => { if (t) { SITE = parseContent(t); pullText(); } }).catch(() => {});
+
+/* =====================================================================
    10. Saving into the site folder (Chrome / Edge), and loading what was saved
    ===================================================================== */
 function idb(mode, fn) {
@@ -1211,7 +1341,8 @@ async function saveToSite() {
   const css = cssText(), json = jsonText();
   if (!window.showDirectoryPicker) {
     S.savedAt = prev;
-    download("layout.css", css, "text/css"); download("layout.json", json, "application/json");
+    if (SITE) { const d = JSON.parse(JSON.stringify(SITE)); if (applyText(d)) download("content.js", contentText(d), "text/javascript"); SITE = d; }
+    download("layout.css", cssText(), "text/css"); download("layout.json", jsonText(), "application/json");
     toast("This browser can't write to folders: put layout.css in the site's css/ folder and layout.json in admin/ (or use Chrome or Edge)");
     return;
   }
@@ -1227,10 +1358,15 @@ async function saveToSite() {
     try { idx = await (await (await dir.getFileHandle("index.html")).getFile()).text(); await dir.getDirectoryHandle("css"); }
     catch (e) { try { await idb("readwrite", st => st.delete("dir")); } catch (_) {} S.savedAt = prev; toast("That isn't the site folder — choose the one with index.html and css/ in it"); return; }
     try { await idb("readwrite", st => st.put(dir, "dir")); } catch (e) {}
-    await writeFile(dir, ["css", "layout.css"], css);
-    await writeFile(dir, ["admin", "layout.json"], json);
+    let nText = 0, textErr = "";
+    try { nText = await pushText(dir); } catch (e) { textErr = e && e.message || String(e); }
+    await writeFile(dir, ["css", "layout.css"], cssText());
+    await writeFile(dir, ["admin", "layout.json"], jsonText());
+    if (textErr) { save(); setStatus(); render(); toast("Layout saved, but js/content.js couldn't be updated: " + textErr); return; }
+    render();
     save(); setStatus();
-    toast(idx.includes("css/layout.css") ? "Saved" + (dir.name ? " to " + dir.name : "") + " — reload the site to see it" : "Saved — but index.html doesn't load css/layout.css yet");
+    const words = nText ? ` — and ${nText} text change${nText > 1 ? "s" : ""} in js/content.js` : "";
+    toast(idx.includes("css/layout.css") ? "Saved" + (dir.name ? " to " + dir.name : "") + words + " — reload the site to see it" : "Saved — but index.html doesn't load css/layout.css yet");
   } catch (e) {
     S.savedAt = prev;
     if (e && e.name === "AbortError") return;
@@ -1250,7 +1386,7 @@ fetch("layout.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).th
   if (!d || !Array.isArray(d.pages) || !d.pages.length) return;
   if (hadLocal && (d.savedAt || 0) <= (S.editedAt || 0)) return;
   loadData(d); S.savedAt = S.editedAt = d.savedAt || Date.now(); last = snapshot(); hist.length = fut.length = 0;
-  selId = null; save(); render(); toast("Opened the layout saved with the site");
+  selId = null; save(); render(); pullText(); toast("Opened the layout saved with the site");
 }).catch(() => {});
 
 let exMode = "css";
