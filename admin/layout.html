@@ -126,6 +126,16 @@
   .body:has(> canvas.tiles) { background: none !important; box-shadow: none !important; }
   canvas.tiles { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .row[hidden], #iPatBox[hidden] { display: none; }
+  /* a section's content items (Structure & Process): what the site shows in each, roughly */
+  .t-box .body { background: #f3f0eb; overflow: hidden; }
+  .t-box .body img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .t-box .body .badge { position: absolute; right: 4px; top: 4px; background: rgba(255,255,255,.9); font: 600 10px/1.4 var(--ui); padding: 1px 5px; border-radius: 2px; }
+  .t-box .body .play { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
+  .t-box.k-text .body { background: none; outline: 1px dashed rgba(0,0,0,.18); text-align: justify; }
+  .t-box.k-text .body h3 { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 1.3em; line-height: 1.15; margin: 0 0 .55em; text-align: left; }
+  .t-box.k-text .body p { margin: 0 0 1em; }
+  .t-box .capt { position: absolute; left: 0; right: 0; top: 100%; margin-top: .4em; color: var(--grey); line-height: 1.4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+  .gridsvg .below { font: 11px var(--ui); }
   .row output { font-size: 11px; color: var(--grey); min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
   .row input[type=range] { width: 100%; min-width: 0; }
   .t-image .body, .t-card .media { background: var(--ph-bg); }
@@ -308,6 +318,7 @@
     <div class="insp" id="insp" hidden>
       <h4>Selected</h4>
       <div class="row two"><input type="text" id="iLabel" placeholder="Label" style="grid-column:1/-1"></div>
+      <p class="note" id="iBoxNote" hidden>An item of this section: its words and pictures are edited in the content editor; here you set where it sits. Images keep their proportions (clear “Keep ratio” below to crop to the box instead).</p>
       <div class="read" id="iRead"></div>
       <div class="row two">
         <span class="unit"><span>x</span><input type="number" id="iX" step=".01"></span>
@@ -554,7 +565,7 @@ function M() {
 // where edges may land, in modules. Left/top edges go to column starts,
 // right/bottom edges to column ends (start of the gutter), plus sub-divisions.
 function targets(axis) {
-  const g = S.grid, m = M(), n = axis === "x" ? g.cols : g.rows, gut = axis === "x" ? m.gx : m.gy;
+  const g = S.grid, m = M(), n = axis === "x" ? g.cols : g.rows + pageExtra(), gut = axis === "x" ? m.gx : m.gy;
   // every snap line (module lines, and sub-divisions if on): a left edge starts on it,
   // a right edge stops one gutter short of it — so things n lines wide are n·u − gutter
   const starts = [0, n], ends = [0, n], sub = Math.max(1, g.sub);
@@ -577,14 +588,15 @@ let scale = 1;
 
 function layoutViewport() {
   const m = M();
-  vp.style.width = m.W + "px"; vp.style.height = m.H + "px";
-  svg.setAttribute("width", m.W); svg.setAttribute("height", m.H);
+  const ext = pageExtra() * m.uh;   // a scrolling section's page runs on below the screen
+  vp.style.width = m.W + "px"; vp.style.height = m.H + ext + "px";
+  svg.setAttribute("width", m.W); svg.setAttribute("height", m.H + ext);
   if (S.view.zoom === "fit") {
     const aw = canvas.clientWidth - 56, ah = canvas.clientHeight - 64;
     scale = Math.max(.1, Math.min(aw / m.W, ah / m.H));
   } else scale = +S.view.zoom;
   vp.style.transform = `scale(${scale})`;
-  wrapEl.style.width = m.W * scale + "px"; wrapEl.style.height = m.H * scale + "px";
+  wrapEl.style.width = m.W * scale + "px"; wrapEl.style.height = (m.H + ext) * scale + "px";
   wrapEl.style.marginTop = (S.view.zoom === "fit" ? Math.max(28, (canvas.clientHeight - m.H * scale) / 2) : 28) + "px";
   $("vpinfo").style.top = "-4px"; $("vpinfo").style.transform = `translateY(-100%) scale(${1 / scale})`; $("vpinfo").style.transformOrigin = "0 100%";
   $("vpinfo").textContent = `${m.W} × ${m.H} · ${Math.round(scale * 100)}% · ${page().name}`;
@@ -635,6 +647,20 @@ function drawGrid() {
     for (let k = 0; k < g.cols; k++) s += `<text x="${m.left + (k + .5) * m.uw}" y="${m.top + m.fh + 14 / scale}" font-size="${fs}" text-anchor="middle" fill="${col}" font-family="Roboto, sans-serif">${k + 1}</text>`;
     for (let k = 0; k < g.rows; k++) s += `<text x="${m.left - 6 / scale}" y="${m.top + (k + .5) * m.uh + fs * .35}" font-size="${fs}" text-anchor="end" fill="${col}" font-family="Roboto, sans-serif">${k + 1}</text>`;
   }
+  // below the screen: the grid runs on for the rows a scrolling section's items reach
+  const ext = pageExtra();
+  if (ext) {
+    const y0 = m.top + m.fh, hh = ext * m.uh;
+    s += `<rect x="${m.left}" y="${y0}" width="${m.fw}" height="${hh}" fill="${red(.035)}"/>`;
+    let e2 = "";
+    for (let k = 1; k <= ext; k++) e2 += `M${m.left} ${y0 + k * m.uh}h${m.fw}`;
+    for (let k = 1; k < g.cols; k++) e2 += `M${m.left + k * m.uw} ${y0}v${hh}`;
+    s += `<path d="${e2}" stroke="${red(.45)}" stroke-width="${sw}" stroke-dasharray="${4 * sw} ${3 * sw}" fill="none"/>`;
+    s += `<rect x="${m.left}" y="${y0}" width="${m.fw}" height="${hh}" fill="none" stroke="${red(.8)}" stroke-width="${sw}" stroke-dasharray="${4 * sw} ${3 * sw}"/>`;
+    s += `<path d="M0 ${y0}H${m.W}" stroke="rgba(31,28,25,.55)" stroke-width="${1.5 * sw}" stroke-dasharray="${8 * sw} ${5 * sw}"/>`;
+    s += `<text class="below" x="${m.left + m.fw}" y="${y0 + 30 / scale}" font-size="${11 / scale}" text-anchor="end" fill="rgba(31,28,25,.75)">↑ bottom of the screen · below it, the section scrolls into view</text>`;
+    if (v.nums) { const fs = 11 / scale; for (let k = 0; k < ext; k++) s += `<text x="${m.left - 6 / scale}" y="${y0 + (k + .5) * m.uh + fs * .35}" font-size="${fs}" text-anchor="end" fill="rgba(190,0,50,.55)" font-family="Roboto, sans-serif">${g.rows + k + 1}</text>`; }
+  }
   svg.innerHTML = s;
 }
 
@@ -662,6 +688,16 @@ function renderEls() {
     place(d, e, m);
     let body = "";
     if (e.type === "pattern" || e.type === "strip") body = `<canvas class="tiles"></canvas>`;
+    else if (e.type === "box") {
+      const it = itemOf(p, e) || {}, src = u => u ? `<img src="../${esc(u)}" alt="">` : "";
+      if (it.type === "image") body = src(it.src);
+      else if (it.type === "carousel") body = src(((it.slides || [])[0] || {}).src) + `<span class="badge">1 / ${(it.slides || []).length}</span>`;
+      else if (it.type === "video") body = src(it.poster) + `<span class="play">▶</span>`;
+      else if (it.type === "embed") body = `<span class="ph">embed</span>`;
+      else body = (it.title ? `<h3>${esc(plainText(it.title))}</h3>` : "") + String(it.body || "").split(/<\/p>/i).map(plainText).filter(Boolean).map(t => `<p>${esc(t)}</p>`).join("");
+      const cap = it.type === "carousel" ? ((it.slides || [])[0] || {}).caption : it.caption;
+      if (cap) body += `</div><div class="capt" style="font-size:${.17 * m.uw}px">${esc(plainText(cap))}`;
+    }
     else if (e.type === "image") body = CROSS + `<span class="ph">${esc(e.label)}</span>`;
     else if (e.type === "logo") body = `<img src="${esc(e.src || "../assets/img/anu-logo.png")}" alt="">`;
     else if (e.type === "text") {
@@ -670,7 +706,9 @@ function renderEls() {
       body = `<div class="media">${CROSS}</div><div class="num" style="font-size:${(e.numSize || .53) * m.uw}px;margin:${.2 * m.uw}px 0 ${.05 * m.uw}px">${esc(e.num)}</div>` +
              `<div class="ttl" style="font-size:${(e.ttlSize || .42) * m.uw}px">${esc(e.ttl)}</div>`;
     }
-    d.innerHTML = `<div class="body"${e.type === "text" ? ` style="${fontCss(e, m)}"` : ""}>${body}</div><span class="tag">${esc(e.label)}</span>`;
+    if (e.type === "box") d.classList.add("k-" + (e.kind || "text"));
+    const bodyCss = e.type === "text" ? fontCss(e, m) : e.type === "box" && !MEDIA.test(e.kind || "") ? `font-family:var(--text);font-size:${.19 * m.uw}px;line-height:1.32` : "";
+    d.innerHTML = `<div class="body"${bodyCss ? ` style="${bodyCss}"` : ""}>${body}</div><span class="tag">${esc(e.label)}</span>`;
     if (e.tp) drawTiles(d.querySelector("canvas.tiles"), e, p, m);
     d.querySelector(".tag").style.transform = `scale(${1 / scale})`;
     const ph = d.querySelector(".ph"); if (ph) ph.style.zoom = 1 / scale;
@@ -730,7 +768,7 @@ function place(d, e, m) {
   d.style.width = e.w * m.uw + "px"; d.style.height = e.h * m.uh + "px";
 }
 function checkOverflow() {
-  requestAnimationFrame(() => els.querySelectorAll(".t-text, .t-card").forEach(d => {
+  requestAnimationFrame(() => els.querySelectorAll(".t-text, .t-card, .t-box.k-text").forEach(d => {
     const b = d.querySelector(".body");
     d.classList.toggle("over", b.scrollHeight > b.clientHeight + 2 || b.scrollWidth > b.clientWidth + 2);
   }));
@@ -741,7 +779,8 @@ function spanText(e) {
   const g = S.grid, m = M(), eps = .02;
   const c0 = Math.floor(e.x + eps) + 1, c1 = Math.ceil(e.x + e.w - eps), r0 = Math.floor(e.y + eps) + 1, r1 = Math.ceil(e.y + e.h - eps);
   const rng = (a, b) => a === b ? `${a}` : `${a}–${b}`;
-  const out = (e.x < -eps || e.x + e.w > g.cols + eps || e.y < -eps || e.y + e.h > g.rows + eps) ? " · runs past the grid" : "";
+  const out = (e.x < -eps || e.x + e.w > g.cols + eps || e.y < -eps || (e.y + e.h > g.rows + eps && e.type !== "box")) ? " · runs past the grid"
+    : e.type === "box" && e.y + e.h > g.rows + eps ? " · below the screen: scrolls into view" : "";
   return `<b>Columns ${rng(c0, c1)}</b> · <b>rows ${rng(r0, r1)}</b>${out}<br>${r3(e.w)} × ${r3(e.h)} u = ${Math.round(e.w * m.uw)} × ${Math.round(e.h * m.uh)} px at ${m.W} × ${m.H}`;
 }
 
@@ -806,7 +845,7 @@ function renderInsp() {
   const set = (id, val) => { const el = $(id); if (document.activeElement !== el) el.value = val == null ? "" : val; };
   set("iLabel", e.label); set("iX", r3(e.x)); set("iY", r3(e.y)); set("iW", r3(e.w)); set("iH", r3(e.h));
   $("iRead").innerHTML = spanText(e); $("iLock").checked = !!e.locked;
-  $("iTextBox").hidden = e.type !== "text"; $("iCardBox").hidden = e.type !== "card"; $("iPatBox").hidden = !e.tp;
+  $("iTextBox").hidden = e.type !== "text"; $("iCardBox").hidden = e.type !== "card"; $("iPatBox").hidden = !e.tp; $("iBoxNote").hidden = e.type !== "box";
   if (e.type === "text") {
     const b = binding(e, page());
     $("iTextSrc").innerHTML = !b ? "Only a stand-in here: give it no selector to make it a placed text on the site."
@@ -1071,6 +1110,7 @@ function move(dir) { const p = page(), i = p.els.findIndex(e => e.id === selId),
 $("iFwd").addEventListener("click", () => move(1)); $("iBack").addEventListener("click", () => move(-1));
 function dup() { const e = sel(); if (!e) return; const c = JSON.parse(JSON.stringify(e)); c.id = newId(); c.label += " copy"; c.x = r3(c.x + 1); c.y = r3(c.y); c.locked = false; const p = page(); p.els.splice(p.els.indexOf(e) + 1, 0, c); selId = c.id; commit(); render(); }
 function del() { const e = sel(); if (!e) return;
+  if (e.type === "box") { toast("“" + e.label + "” is an item of the section — remove it in the content editor, or hide it here (●), which hides it on the site too"); return; }
   if (STRUCTURAL.test(e.sel || "")) { toast("“" + e.label + "” holds other parts of the site — move, resize or hide it (●) instead of deleting it"); return; }
   const p = page(); p.els = p.els.filter(o => o !== e); p.els.forEach(o => { if (o.parent === e.id) o.parent = ""; }); selId = null; commit(); render(); }
 $("iDup").addEventListener("click", dup);
@@ -1182,8 +1222,18 @@ function cssText() {
     const parentOf = e => e.parent ? p.els.find(o => o.id === e.parent) : null;
     rules.set(`/* page ${p.id} */`, { comment: true, page: p });
     p.els.forEach(e => {
-      if (e.hidden) return;
+      if (e.hidden) {   // a hidden item is hidden on the site too
+        if (e.type === "box" && e.item) add(S_(`.panel > .box[data-key="${e.item}"]`), ["display: none;"], where(e) + " (hidden)");
+        return;
+      }
       const P = domContainer(e, p) || parentOf(e);
+      if (e.type === "box" && e.item) {   // a section's item, pinned in the scrolling panel (offsets from its top-left, heading included)
+        const Pn = P || p.els.find(o => o.sel === ".frame > .panel") || { x: 0, y: 0, id: "" }, oy = Pn.y - panelLift(p, Pn);
+        const bs = `.panel > .box[data-key="${e.item}"]`;
+        add(S_(bs), [`position: absolute; margin: 0; padding: 0; grid-column: auto;`, `left: ${len(e.x - Pn.x)};`, `top: ${len(e.y - oy, "y")};`, `width: ${len(e.w)};`], where(e));
+        if (MEDIA.test(e.kind || "")) add(S_(bs + " .media"), [`aspect-ratio: auto;`, `height: ${len(e.h, "y")};`]);
+        return;
+      }
       if (!e.sel) {
         if (e.type === "text") {   // a placed text: js/main.js puts it on the site from content.js (SITE.texts)
           add(scoped(isHome ? SCOPES.home : sc, `.frame > .xtext[data-xt="${e.id}"]`), [`display: block;`, ...box(e, null, false), ...typeDecl(e)], where(e) + " (placed text)");
@@ -1258,12 +1308,15 @@ function cssText() {
       }
       // a section panel crops what lies outside it (it scrolls): when a heading part sits above its
       // top edge, the panel starts that much higher and pads its top by the same, so nothing moves
-      let lift = 0;
-      if (/\.panel\b/.test(sel) && !P) {
-        const kids = p.els.filter(o => o.parent === e.id && !o.hidden && /^\.phead /.test(o.sel || ""));
-        if (kids.length) lift = Math.max(0, r3(e.y - Math.min(...kids.map(o => o.y))));
-      }
+      const lift = /\.panel\b/.test(sel) && !P ? panelLift(p, e) : 0;
       const d = box(lift ? Object.assign({}, e, { y: e.y - lift, h: e.h + lift }) : e, P, e.type !== "text");
+      // items placed one by one: the panel stops laying them out itself, and scrolls to a module below the lowest
+      const boxes = sel === ".frame > .panel" ? p.els.filter(o => o.type === "box" && o.parent === e.id && !o.hidden) : [];
+      if (boxes.length) {
+        d.push("display: block;");
+        const low = Math.max(...boxes.map(b => b.y + b.h + (b.cap ? .5 : 0)));
+        add(S_(sel) + "::after", [`content: ""; position: absolute; left: 0; width: 1px; height: 1px;`, `top: ${len(low + 1 - (e.y - lift), "y")};`]);
+      }
       if (e.tp) d.push(...TP_TILES.toCss(e.tp));   // pattern settings, read by js/main.js
       if (lift) d.push(`padding-top: ${len(lift, "y")};`);
       if (e.type === "text") d.push(...typeDecl(e));
@@ -1410,9 +1463,75 @@ function syncKinds() {
   selId = null; commit(); render();
   toast("“" + done.join("”, “") + "” changed layout in the content editor — switched here to match (its old layout is kept). Save to site to apply.");
 }
+/* A scrolling section's items (its texts, images, carousels, videos) can be placed one by one on the
+   grid: the page here then runs on below the screen, row after row, and the site pins each item where it
+   is put, scrolling inside the section as before. Each item is bound by a key that is written into
+   js/content.js (item.key), so reordering, adding or deleting items in the content editor carries over. */
+const ITEM_COLS = { 1: 4, 2: 7, 3: 10, 4: 14 };            // how wide the site's auto-layout makes each span (style.css)
+const MEDIA = /^(image|carousel|video|embed)$/;
+const plainText = v => String(v || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+function itemRatio(it) { const r = String(it.ratio || (it.type === "embed" ? "16/9" : "4/3")).split("/").map(Number); return r[1] ? r[0] / r[1] : 4 / 3; }
+function itemLabel(it, i) {
+  const t = plainText(it.title || it.caption || (it.slides ? it.slides.length + " images" : "") || (it.src || "").split("/").pop());
+  return `${i + 1} · ${it.type}${t ? " — " + t.slice(0, 38) : ""}`;
+}
+function itemPages() {   // the pages whose section's items are placed here
+  return S.pages.filter(p => {
+    if ((p.kind || p.id) !== "section" || (p.builtin && p.id === "section") || !SITE) return false;
+    const sec = SITE.sections.find(x => x.id === (p.hash || "").replace(/^#/, ""));
+    return sec && !sec.comingSoon && sec.layout !== "horizontal" && (sec.items || []).length && p.els.some(o => o.sel === ".frame > .panel");
+  });
+}
+const itemOf = (p, e) => { const sec = SITE && SITE.sections.find(x => x.id === (p.hash || "").replace(/^#/, "")); return sec && (sec.items || []).find(it => it.key === e.item); };
+function syncItems() {
+  let changed = false;
+  itemPages().forEach(p => {
+    const sec = SITE.sections.find(x => x.id === (p.hash || "").replace(/^#/, "")), items = sec.items;
+    const panel = p.els.find(o => o.sel === ".frame > .panel");
+    const seen = new Set();   // keys are written to content.js on saving; an item duplicated there gets one of its own
+    items.forEach(it => { if (!it.key || seen.has(it.key)) it.key = "k" + Math.random().toString(36).slice(2, 8); seen.add(it.key); });
+    const keys = new Set(items.map(it => it.key)), n0 = p.els.length;
+    p.els = p.els.filter(e => e.type !== "box" || keys.has(e.item));   // deleted in the content editor
+    if (p.els.length !== n0) changed = true;
+    // new items go below everything placed (at first: where the "Content (scrolls)" stand-in is), in rows by their width
+    const stand = p.els.find(e => e.type === "area" && !e.sel && /^Content/.test(e.label || ""));
+    const placed = p.els.filter(e => e.type === "box");
+    const left = panel.x, right = panel.x + panel.w;   // as the site's own layout runs: from the panel's left edge
+    let x = left, y = placed.length ? Math.ceil((Math.max(...placed.map(b => b.y + b.h + (b.cap ? .5 : 0))) + .5) * 4) / 4 : (stand ? stand.y : panel.y + 1.5), rowH = 0;
+    items.forEach((it, i) => {
+      const label = itemLabel(it, i), cap = !!(it.caption || it.type === "carousel");
+      const old = p.els.find(o => o.type === "box" && o.item === it.key);
+      if (old) { if (old.label !== label || old.kind !== it.type || old.cap !== cap) { Object.assign(old, { label, kind: it.type, cap }); changed = true; } return; }
+      const w = Math.min(right - left, ITEM_COLS[Math.min(4, Math.max(1, it.span || 1))]) - .3;
+      let h;
+      if (MEDIA.test(it.type)) h = w / itemRatio(it);
+      else { const words = plainText(it.body).length, cpl = Math.max(8, w / .095); h = (it.title ? .5 : 0) + Math.ceil(words / cpl + 1) * .19 * 1.32; }
+      h = Math.max(.5, Math.ceil(h * 4) / 4);
+      if (x + w > right + .01) { x = left; y += rowH + .5; rowH = 0; }
+      const e = { type: "box", label, x: r3(x), y: r3(y), w: r3(w), h: r3(h), item: it.key, kind: it.type, cap, parent: panel.id, id: newId() };
+      if (MEDIA.test(it.type)) { e.ratio = r3(itemRatio(it)); e.ratioText = String(it.ratio || ""); }
+      p.els.push(e); changed = true;
+      x += w + .3; rowH = Math.max(rowH, h + (cap ? .5 : 0));
+    });
+    if (stand && p.els.some(e => e.type === "box")) { p.els = p.els.filter(e => e !== stand); changed = true; }
+  });
+  if (changed) { selId = null; commit(); render(); }
+}
+// rows below the screen that a page runs on into (its lowest item, and room for one more)
+function pageExtra(p = page()) {
+  const boxes = p.els.filter(e => e.type === "box");
+  if (!boxes.length) return 0;
+  return Math.max(0, Math.ceil(Math.max(...boxes.map(b => b.y + b.h + (b.cap ? .5 : 0))) + 2) - S.grid.rows);
+}
+// how far a panel is drawn up to hold its heading (see the CSS below)
+function panelLift(p, P) {
+  const kids = p.els.filter(o => o.parent === P.id && !o.hidden && /^\.phead /.test(o.sel || ""));
+  return kids.length ? Math.max(0, r3(P.y - Math.min(...kids.map(o => o.y)))) : 0;
+}
 function pullText() {
   if (!SITE) return;
   syncKinds();
+  syncItems();
   let changed = false;
   S.pages.forEach(p => p.els.forEach(e => {
     const b = binding(e, p); if (!b) return;
@@ -1435,6 +1554,11 @@ function applyText(d) {
     if (after !== undefined) { if (edited && after !== before) n++; e.text = after; e.textFrom = after; }
   }));
   if (d.texts) { const k = d.texts.length; d.texts = d.texts.filter(t => custom.has(t.id)); n += k - d.texts.length; if (!d.texts.length) delete d.texts; }
+  // the keys that tie items to their places here
+  if (SITE) itemPages().forEach(p => {
+    const id = (p.hash || "").replace(/^#/, ""), a = SITE.sections.find(x => x.id === id), b = d.sections.find(x => x.id === id);
+    if (a && b) (b.items || []).forEach((it, i) => { const was = (a.items || [])[i]; if (was && was.key && was.type === it.type && it.key !== was.key) it.key = was.key; });
+  });
   return n;
 }
 const contentText = d => CONTENT_HEADER + "window.SITE = " + JSON.stringify(d, null, 2) + ";\n";
@@ -1473,7 +1597,7 @@ async function saveToSite() {
   const css = cssText(), json = jsonText();
   if (!window.showDirectoryPicker) {
     S.savedAt = prev;
-    if (SITE) { const d = JSON.parse(JSON.stringify(SITE)); if (applyText(d)) download("content.js", contentText(d), "text/javascript"); SITE = d; }
+    if (SITE) { const d = JSON.parse(JSON.stringify(SITE)), was = JSON.stringify(d); applyText(d); if (JSON.stringify(d) !== was || itemPages().length) download("content.js", contentText(d), "text/javascript"); SITE = d; }
     download("layout.css", cssText(), "text/css"); download("layout.json", jsonText(), "application/json");
     toast("This browser can't write to folders: put layout.css in the site's css/ folder and layout.json in admin/ (or use Chrome or Edge)");
     return;

@@ -612,6 +612,9 @@
     }
   }
 
+  // an item placed in the layout editor carries its key, which css/layout.css uses to pin it
+  const withKey = (html, key) => key ? html.replace(/^<(\w+) /, `<$1 data-key="${esc(key)}" `) : html;
+
   /* consecutive project boxes become one horizontally scrolling rail */
   function itemsHTML(items, horiz) {
     let out = "", run = [];
@@ -623,7 +626,7 @@
     };
     (items || []).forEach(it => {
       if (it.type === "project") run.push(it);
-      else { flush(); out += boxHTML(it); }
+      else { flush(); out += withKey(boxHTML(it), it.key); }
     });
     flush();
     return out;
