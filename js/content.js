@@ -7,12 +7,11 @@
 
 window.SITE = {
   "title": "Turning Point",
-  "meta": "",
+  "meta": "4 December 2026 to 21 March 2027",
   "preface": {
-    "lead": "",
+    "lead": "Turning Point  by  Anant National University",
     "paragraphs": [
-      "The act of becoming is constant negotiation, filled with many choices and decisions. Who takes the decision and for what?\n\nEvery work begins with a set of intentions, yet true transformation happens in the friction of making—when thought is forced to take physical form. Here, design, people, and material converge to test and blur their own boundaries.\n\nTurning Point is that point where the process of deciding and making dissolves into being.",
-      "Through trust, materiality, and shared inquiry, learning becomes a living negotiation. Here, process and meaning merge, inviting us to witness how we shape the world as it shapes us."
+      "The act of becoming is constant negotiation, comprising many choices and decisions. Who takes the decision, and for what? \n\nEvery work begins with a set of intentions, yet true transformation happens in the friction of making—when thought is compelled to take physical form. Here, design ideas, peoples’ skills, and physical material converge, testing and blurring  distinct boundaries.\n\nTurning Point is that point where the process of conceiving  and making dissolves into being."
     ],
     "button": "Enter"
   },
@@ -25,10 +24,6 @@ window.SITE = {
   "socials": [
     {
       "label": "Instagram",
-      "url": "#"
-    },
-    {
-      "label": "YouTube",
       "url": "#"
     }
   ],
@@ -285,56 +280,64 @@ window.SITE = {
             {
               "role": "Concept & design",
               "names": [
-                "Name Surname",
-                "Name Surname",
-                "Name Surname",
-                "Name Surname"
+                "Vijay Sekhon",
+                "Aditi Vashisht",
+                "Dhruv Jani"
               ]
             },
             {
-              "role": "Pattern & computation",
+              "role": "Project Management",
               "names": [
-                "Name Surname",
-                "Name Surname",
-                "Name Surname"
+                "Sangramsingh Parmar",
+                "Pallavi Jain",
+                "Lalit Kumar"
               ]
             },
             {
-              "role": "Structure & engineering",
+              "role": "Fabrication & Engineering",
               "names": [
-                "Name Surname",
-                "Name Surname",
-                "Name Surname"
+                "Craft Cult Designs"
               ]
             },
             {
-              "role": "Fabrication",
+              "role": "Student team & Website",
               "names": [
-                "Name Surname",
-                "Name Surname"
+                "Labhansh Banger",
+                "Chinmaye Raju",
+                "Sairam KR",
+                "Sadhika Saji"
               ]
             },
             {
-              "role": "Student team",
+              "role": "Additional Credits",
               "names": [
-                "Name Surname",
-                "Name Surname",
-                "Name Surname",
-                "Name Surname"
+                "Irena Romendik",
+                "Sharmila Sagra",
+                "Shrikant Paul",
+                "Piyush Thakkar"
               ]
             },
             {
-              "role": "Website",
+              "role": "Events Team",
               "names": [
-                "Name Surname",
-                "Name Surname"
+                "Vidhu Bansal",
+                "Sharmila Sagara",
+                "Amruta Namjoshi"
+              ]
+            },
+            {
+              "role": "Marketing & Communication",
+              "names": [
+                "Apoorva Bagchi",
+                "Burzeen Bhatina",
+                "Juhi Hajela"
               ]
             }
           ]
         },
         {
           "type": "links",
-          "span": 1,
+          "span": 2,
           "title": "Follow",
           "links": [
             {
@@ -342,20 +345,17 @@ window.SITE = {
               "url": "#"
             },
             {
-              "label": "YouTube",
-              "url": "#"
-            },
-            {
               "label": "Anant University",
-              "url": "#"
+              "url": "https://www.anu.edu.in/"
             },
             {
-              "label": "Delhi Art Biennale",
-              "url": "#"
+              "label": "India Art Biennale",
+              "url": "https://indiabiennale.culture.gov.in/"
             }
           ]
         }
-      ]
+      ],
+      "layout": "horizontal"
     }
   ]
 };
