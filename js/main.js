@@ -992,6 +992,7 @@
      text's dissolve, run the other way: each picture gets its own filter, whose threshold sweeps from
      nothing shown to all of it; then the filter is removed. Sections listed here use it. */
   const PATTERN_REVEAL = new Set(["structure"]);
+  const REVEAL_TILE = 1100;   // px the pattern is drawn at on pictures: larger = bolder, fewer blobs (the opening text uses 460)
   let revealN = 0;
   // the pattern is loaded up front: a filter whose image isn't there yet shows the picture unfiltered
   const dissolveImg = new Image(); dissolveImg.src = "assets/img/dissolve.png";
@@ -1001,7 +1002,7 @@
     const id = "rdIn" + (++revealN);
     document.body.insertAdjacentHTML("beforeend",
       `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="${id}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">` +
-      `<feImage href="assets/img/dissolve.png" x="0" y="0" width="460" height="460" preserveAspectRatio="none" result="t"/><feTile in="t" result="tt"/>` +
+      `<feImage href="assets/img/dissolve.png" x="0" y="0" width="${REVEAL_TILE}" height="${REVEAL_TILE}" preserveAspectRatio="none" result="t"/><feTile in="t" result="tt"/>` +
       `<feComponentTransfer in="tt" result="m"><feFuncA type="linear" slope="30" intercept="-30"/></feComponentTransfer>` +
       `<feComposite in="SourceGraphic" in2="m" operator="in"/></filter></svg>`);
     const svgEl = document.body.lastElementChild, fn = svgEl.querySelector("feFuncA");
