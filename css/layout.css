@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-24 10:05).
+   css/layout.css — written by admin/layout.html (2026-11-24 10:26).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -29,11 +29,11 @@
     width: calc(3 * var(--u));
     height: calc(8 * var(--u));
   }
-  .frame > .stage {   /* Interactive pattern: columns 1–6, rows 1–7 */
+  .frame > .stage {   /* Interactive pattern: columns 1–6, rows 2–7 */
     left: var(--pl);
-    top: var(--mt);
+    top: calc(var(--mt) + var(--u));
     width: calc(6 * var(--u));
-    height: calc(7 * var(--u));
+    height: calc(6 * var(--u));
   }
   .frame > .org {   /* University logo: columns 1–2, rows 8 */
     left: var(--pl);
@@ -55,7 +55,7 @@
     max-width: none;
     width: calc(6 * var(--u));
     height: calc(1.5 * var(--u));
-    margin: 0 0 calc(.5 * var(--u));
+    margin: 0 0 var(--u);
     font-size: calc(.298 * var(--u));
     line-height: 1.2;
     font-family: var(--display);
@@ -99,9 +99,9 @@
     color: var(--accent);
     text-align: left;
   }
-  .nav {   /* Menu: columns 12–14, rows 6–8 */
+  .nav {   /* Menu: columns 12–14, rows 6–7 */
     left: 0;
-    top: calc(5.64 * var(--u));
+    top: calc(5 * var(--u));
     width: calc(3 * var(--u));
     font-size: calc(.35 * var(--u));
   }
@@ -129,12 +129,33 @@
     color: var(--ink);
     text-align: left;
   }
+  .frame > .xpat[data-pa="home:eztzv"] {   /* Pattern area: columns 4–6, rows 8 (pattern area) */
+    display: block;
+    left: calc(var(--pl) + 3.75 * var(--u));
+    top: calc(var(--mt) + 7 * var(--u));
+    width: calc(2.25 * var(--u));
+    height: var(--u);
+  }
+  .frame > .xpat[data-pa="home:e10ndl"] {   /* Pattern area: columns 14–15, rows 8 (pattern area) */
+    display: block;
+    left: calc(var(--pl) + 13 * var(--u));
+    top: calc(var(--mt) + 7 * var(--u));
+    width: calc(2 * var(--u));
+    height: var(--u);
+  }
+  .frame > .xpat[data-pa="home:e116ui"] {   /* Pattern area: columns 1–7, rows 1–2 (pattern area) */
+    display: block;
+    left: var(--pl);
+    top: var(--mt);
+    width: calc(6.25 * var(--u));
+    height: calc(1.25 * var(--u));
+  }
 
   /* ---------- Section (Credits)  (index.html#credits) ---------- */
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) > .panel {   /* Section (.panel): columns 1–14, rows 2–8 (lifted 1 for the heading above it) */
-    left: var(--pl);
+    left: calc(var(--pl) + .5 * var(--u));
     top: calc(var(--mt) + .5 * var(--u));
-    width: calc(14 * var(--u));
+    width: calc(13.5 * var(--u));
     height: calc(7.5 * var(--u));
     padding-top: var(--u);
   }
@@ -146,7 +167,7 @@
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .phead h2 {   /* Team: columns 1–7, rows 1 */
     position: absolute; margin: 0; grid-area: auto;
-    left: calc(.5 * var(--u));
+    left: 0;
     top: calc(-1 * var(--u));
     width: calc(6 * var(--u));
     font-size: calc(.44 * var(--u));
@@ -160,7 +181,7 @@
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .phead .lede {   /* Lede: columns 1–7, rows 2–3 */
     position: absolute; margin: 0; grid-area: auto;
-    left: calc(.5 * var(--u));
+    left: 0;
     top: 0;
     width: calc(6.25 * var(--u));
     font-size: calc(.205 * var(--u));
@@ -173,7 +194,7 @@
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .phead .back {   /* Back: columns 12–14, rows 2 */
     position: absolute; margin: 0; grid-area: auto;
-    left: calc(11 * var(--u));
+    left: calc(10.5 * var(--u));
     top: calc(-1 * .5 * var(--u));
     width: calc(3 * var(--u));
     font-size: calc(.32 * var(--u));
@@ -188,7 +209,7 @@
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .panel > .credits {   /* Content (credits): columns 1–14, rows 3–6 */
     grid-column: 1 / -1; justify-self: start;
     width: calc(13.5 * var(--u));
-    margin-left: calc(.5 * var(--u));
+    margin-left: 0;
     margin-top: calc(-1 * .25 * var(--u));
     columns: 3;
     column-gap: calc(.3 * var(--u));

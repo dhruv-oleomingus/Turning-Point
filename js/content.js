@@ -16,7 +16,7 @@ window.SITE = {
     "button": "Enter"
   },
   "intro": [
-    "<span class='sc'>Turning Point</span> is an installation project by Anant University, created for the Delhi Art Biennale 2026.",
+    "<span class='sc'>Turning Point</span> is an installation project by Anant University, created for the India Art Biennale 2026.",
     "At its core is a physical structure made of four spiraling steel columns that are held together in dynamic balance. Each 6 meter tall column rotates gradually from the base and is imbricated with patterns of emergent life-processes.",
     "The work invites you to examine the site through these perforations, pondering our relationships with the self, the other and the cosmos at large.",
     "You can <a data-go='explore'>explore</a> interactive interpretations of the site and its themes, read more about the <a data-go='structure'>structure</a> and its construction, see upcoming <a data-go='events'>events</a>, or find out about the <a data-go='credits'>team</a> that built the project."
