@@ -93,11 +93,11 @@
     const DENSER = 1.5;                                                     // the whole pattern this much finer than the home page's
     const cell0 = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720) / DENSER;   // css px per sim cell, at the frame's first size
     /* the plate's surface: one of two pictures, picked at random on each visit (?tex=bamboo or ?tex=coral to
-       choose). Each block is cut from its own part of the picture. The files are square; TEX_A is how much of
+       choose), shuffled into a patchwork (below). The files are square; TEX_A is how much of
        their height is picture (1: all of it). */
     const TEXTURES = { bamboo: "../../assets/img/perforation/bamboo.jpg", coral: "../../assets/img/perforation/coral.jpg" }, TEX_A = 1;
     const texName = (location.search.match(/[?&]tex=(bamboo|coral)\b/) || [])[1] || (Math.random() < 0.5 ? "bamboo" : "coral");
-    const rd = new TurningPattern(canvas, { texture: TEXTURES[texName], texturePx: 620, seed: 11, allowAll: false, drift: 0.00005,
+    const rd = new TurningPattern(canvas, { texturePx: 620, seed: 11, allowAll: false, drift: 0.00005,
                                             regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 });
     if (!rd.ok) { hint.textContent = "This piece needs WebGL2"; return; }
     rd.start(Math.ceil(fr.w / cell0), Math.ceil(fr.h / cell0), cell0);
@@ -112,7 +112,7 @@
        the one pattern, drawn larger about its middle (z < 1: more open), so what grows in a block stays in it. */
     const ROWS = mobile ? Math.max(3, Math.round(fr.h / (fr.w / 5))) : 9;
     const COLS = mobile ? 5 : Math.max(1, Math.round(fr.w / (fr.h / ROWS)));
-    const Z = [1, 0.68, 0.46];                        // grain: dense, medium, open
+    const Z = [1, 0.75, 0.6];                         // grain: dense, medium, open
     // the voices go by rows, in pairs from the top: pluck, keys, bass, and round again (a last row on its own
     // joins the pair above it)
     const VOICE = ["pluck", "keys", "bass"], VOICE_HEX = ["#e4572e", "#3fa7c9", "#6a4fa3"];
@@ -120,7 +120,7 @@
     for (let r = 0; r < ROWS; r += 2) BANDS.push([r, Math.min(ROWS, r + 2)]);
     if (BANDS.length > 1 && BANDS[BANDS.length - 1][1] - BANDS[BANDS.length - 1][0] < 2) BANDS[BANDS.length - 2][1] = BANDS.pop()[1];
     const bandOf = r => Math.max(0, BANDS.findIndex(([a, b]) => r >= a && r < b));
-    const DENS_W = [0.4, 0.3, 0.3];                   // how often each grain is dealt
+    const DENS_W = [0.5, 0.4, 0.1];                   // how often each grain is dealt
     const blocks = [], owner = new Int32Array(ROWS * COLS);   // owner: the block each square belongs to
     {
       const plan = TP_TILES.plan({ rows: ROWS, cols: COLS, key: "perforation", blocks: "mixed", draw: "mix", outlines: 0.3,
@@ -130,8 +130,7 @@
         for (const q of pb.parts) { c0 = Math.min(c0, q.c); c1 = Math.max(c1, q.c + q.cw); r0 = Math.min(r0, q.r); r1 = Math.max(r1, q.r + q.rh); }
         const x = Math.random(), dens = x < DENS_W[0] ? 0 : x < DENS_W[0] + DENS_W[1] ? 1 : 2;
         const id = blocks.push({ style: pb.style, dens, ax: (c0 + c1) / 2 / COLS, ay: (r0 + r1) / 2 / ROWS,   // its middle, as a share of the frame
-                                 bx: c0 / COLS, by: r0 / ROWS, bw: (c1 - c0) / COLS, bh: (r1 - r0) / ROWS,       // its box
-                                 ux: Math.random(), uy: Math.random() }) - 1;                                     // where in the picture it is cut from
+                                 }) - 1;
         for (const q of pb.parts) for (let j = 0; j < q.rh; j++) for (let i = 0; i < q.cw; i++) owner[(q.r + j) * COLS + q.c + i] = id;
       }
     }
@@ -354,6 +353,34 @@
       Object.assign(bandsEl.style, { left: r.left - 11 + "px", top: r.top + "px", height: r.height + "px" });
     }
     placeBands();
+
+    /* the surface: the picture shuffled. A new texture is painted square by square (and now and then a square in
+       quarters), each from a random part of the picture, a little larger or smaller, sometimes mirrored or upside
+       down — laid so each patch sits exactly on its square. A new shuffle on every visit. */
+    const MOSAIC_PX = 2048, SPLIT = 0.4, PATCH_SCALE = [0.7, 1.4];
+    const pic = new Image();
+    pic.onload = () => {
+      const T = Math.max(fw, fh / TEX_A), k = MOSAIC_PX / T;              // mosaic px per css px of the frame
+      const tw = fw / COLS * k, th = fh / ROWS * k;                        // one square, in mosaic px
+      const cv = document.createElement("canvas"); cv.width = cv.height = MOSAIC_PX;
+      const g = cv.getContext("2d"), PW = pic.naturalWidth, PH = pic.naturalHeight * TEX_A;
+      const patch = (x, y, w, h) => {
+        const s = (PW / MOSAIC_PX) * (PATCH_SCALE[0] + Math.random() * (PATCH_SCALE[1] - PATCH_SCALE[0]));   // picture px per mosaic px
+        const sw = Math.min(PW, w * s), sh = Math.min(PH, h * s);
+        const sx = Math.random() * (PW - sw), sy = Math.random() * (PH - sh);
+        g.save(); g.translate(x + w / 2, y + h / 2);
+        if (Math.random() < 0.25) g.rotate(Math.PI);
+        if (Math.random() < 0.3) g.scale(-1, 1);
+        g.drawImage(pic, sx, sy, sw, sh, -w / 2 - 0.5, -h / 2 - 0.5, w + 1, h + 1);   // a hair over, so no seam shows
+        g.restore();
+      };
+      for (let y = 0; y < MOSAIC_PX; y += th) for (let x = 0; x < MOSAIC_PX; x += tw) {
+        if (Math.random() < SPLIT) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) patch(x + i * tw / 2, y + j * th / 2, tw / 2, th / 2);
+        else patch(x, y, tw, th);
+      }
+      cv.toBlob(b => rd.loadTexture(URL.createObjectURL(b)), "image/jpeg", 0.92);
+    };
+    pic.src = TEXTURES[texName];
     addEventListener("resize", () => {
       const f = placeFrame(); fw = f.w; fh = f.h; cellPx = rd.cell = cell0 * fw / fw0; mapDirty = true; rd.resize(); placeBands();
     });
@@ -361,14 +388,12 @@
     function rects() {
       const out = [], sw = fw / COLS, sh = fh / ROWS;
       // the picture at the frame's size, whichever grain a block is drawn at; each block cut from its own part of it
-      const T = rd.opts.texturePx = Math.max(fw, fh / TEX_A);
+      const T = rd.opts.texturePx = Math.max(fw, fh / TEX_A);   // the surface (shuffled, below) lies still under every block
       for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
         const b = blocks[owner[r * COLS + c]], z = Z[b.dens], x0 = Math.round(c * sw), y0 = Math.round(r * sh);
         out.push({ x: x0, y: y0, w: Math.round((c + 1) * sw) - x0, h: Math.round((r + 1) * sh) - y0,
                    ox: b.ax * fw * (1 - z) / z, oy: b.ay * fh * (1 - z) / z, style: b.style, zoom: z });
-        const q = out[out.length - 1];
-        const u = b.ux * Math.max(0, 1 - b.bw * fw / T), v = b.uy * Math.max(0, TEX_A - b.bh * fh / T);   // its box's corner, in the picture
-        q.tx = u - (b.bx * fw + q.ox) / T; q.ty = v - (b.by * fh + q.oy) / T;
+        const q = out[out.length - 1]; q.tx = -q.ox / T; q.ty = -q.oy / T;
       }
       return out;
     }
