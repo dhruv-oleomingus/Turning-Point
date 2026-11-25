@@ -42,7 +42,7 @@
 
   <aside class="xinfo" id="info">
     <p>The columns of Turning Point are cut with patterns grown by a reaction–diffusion process — two simulated substances, one feeding and one consuming the other, settling into tendrils, labyrinths and spots.</p>
-    <p>The plate is cut into squares, as the columns are, and the squares are grouped into blocks — single squares, pairs, bars, corners. Each block holds the pattern at its own grain, dense, medium or open, cut through the plate or drawn only as an outline.</p>
+    <p>The plate is cut into squares, as the columns are, and the squares are grouped into blocks — single squares, pairs, bars, corners. Each block holds the pattern at its own grain, dense, medium or open, cut through the plate or drawn only as an outline. Some are turned inside out: the tendrils carry the picture, with white around them.</p>
     <p>Tap to start a pattern; drag from it to stretch it — it grows where you pull it. Pull it across the edge of a square and that square takes on the pattern you brought: it joins the block you came from, with its grain and its cut.</p>
     <p>Press play: a line crosses the plate from left to right. Every cut shape it passes through — a tendril, a cell — sounds once, in the voice of the rows it sits in. The rows play in pairs, from the top: pluck, keys, bass, and round again — marked beside the plate — each shape higher the higher it sits within its pair. Outlined squares stay silent. The more shapes still ahead, the slower it goes. The pattern can be grown, and pulled about, while it plays.</p>
   </aside>
@@ -122,6 +122,7 @@
     if (BANDS.length > 1 && BANDS[BANDS.length - 1][1] - BANDS[BANDS.length - 1][0] < 2) BANDS[BANDS.length - 2][1] = BANDS.pop()[1];
     const bandOf = r => Math.max(0, BANDS.findIndex(([a, b]) => r >= a && r < b));
     const DENS_W = [0.5, 0.4, 0.1];                   // how often each grain is dealt
+    const INVERT = 0.5;                               // the share of picture blocks turned inside out: the tendrils carry the picture, white around them
     const blocks = [], owner = new Int32Array(ROWS * COLS);   // owner: the block each square belongs to
     {
       const plan = TP_TILES.plan({ rows: ROWS, cols: COLS, key: "perforation", blocks: "mixed", draw: "mix", outlines: 0.3,
@@ -131,7 +132,7 @@
         for (const q of pb.parts) { c0 = Math.min(c0, q.c); c1 = Math.max(c1, q.c + q.cw); r0 = Math.min(r0, q.r); r1 = Math.max(r1, q.r + q.rh); }
         const x = Math.random(), dens = x < DENS_W[0] ? 0 : x < DENS_W[0] + DENS_W[1] ? 1 : 2;
         const id = blocks.push({ style: pb.style, dens, ax: (c0 + c1) / 2 / COLS, ay: (r0 + r1) / 2 / ROWS,   // its middle, as a share of the frame
-                                 }) - 1;
+                                 inv: pb.style === 0 && Math.random() < INVERT }) - 1;
         for (const q of pb.parts) for (let j = 0; j < q.rh; j++) for (let i = 0; i < q.cw; i++) owner[(q.r + j) * COLS + q.c + i] = id;
       }
     }
@@ -387,6 +388,12 @@
     });
     // one rectangle per square, through its block: grain (zoom), drawn about the block's middle, steel or outline
     const RENDER = { fill: 0, rim: 0, crisp: true };   // clean cuts: no darkened rim, no soft edge
+    // the plate in two passes: the blocks cut through the picture, then the inverted ones (the cut shapes drawn in it)
+    function drawPlate() {
+      const r = rects();
+      rd.render(r.filter(q => !q.inv), RENDER);
+      rd.render(r.filter(q => q.inv), Object.assign({}, RENDER, { invert: true, clear: false }));
+    }
     function rects() {
       const out = [], sw = fw / COLS, sh = fh / ROWS;
       // the picture at the frame's size, whichever grain a block is drawn at; each block cut from its own part of it
@@ -394,7 +401,7 @@
       for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
         const b = blocks[owner[r * COLS + c]], z = Z[b.dens], x0 = Math.round(c * sw), y0 = Math.round(r * sh);
         out.push({ x: x0, y: y0, w: Math.round((c + 1) * sw) - x0, h: Math.round((r + 1) * sh) - y0,
-                   ox: b.ax * fw * (1 - z) / z, oy: b.ay * fh * (1 - z) / z, style: b.style, zoom: z });
+                   ox: b.ax * fw * (1 - z) / z, oy: b.ay * fh * (1 - z) / z, style: b.style, zoom: z, inv: b.inv });
         const q = out[out.length - 1]; q.tx = -q.ox / T; q.ty = -q.oy / T;
       }
       return out;
@@ -419,7 +426,7 @@
       const s = Math.min(CARD_PX[0] / fw, CARD_PX[1] / fh);   // the plate, as large as fits the card
       const w = Math.round(fw * s), h = Math.round(fh * s);
       canvas.width = w; canvas.height = h; rd.dpr = s;
-      rd.render(rects(), RENDER);
+      drawPlate();
       const out = document.createElement("canvas"); out.width = CARD_PX[0]; out.height = CARD_PX[1];
       const g = out.getContext("2d");
       g.fillStyle = "#fff"; g.fillRect(0, 0, out.width, out.height);
@@ -473,7 +480,7 @@
           if (now - lastScan > 250) { lastScan = now; scan(); }   // the shapes as they are now (they keep moving)
           sweep(dt);
         }
-        rd.render(rects(), RENDER);
+        drawPlate();
         drawOver();
         $("tempo").textContent = playing ? tempoTxt : "";
       }
