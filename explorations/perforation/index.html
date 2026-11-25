@@ -29,6 +29,11 @@
     #field { touch-action: none; cursor: crosshair; }
     #over { pointer-events: none; }
     .perf .xhint { position: absolute; inset: 0; color: var(--soft); }
+    .perf .xtools .sw { display: inline-flex; align-items: baseline; gap: .45em; }
+    .perf .xtools .sw i { width: .8em; height: .8em; border-radius: 50%; background: var(--c); display: inline-block; transform: translateY(.08em); opacity: .55; }
+    .perf .xtools .sw.is-on i { opacity: 1; box-shadow: 0 0 0 2px #141210, 0 0 0 3px var(--c); }
+    .perf .xtools [hidden] { display: none; }
+    body.sound #field { cursor: pointer; }
   </style>
 </head>
 <body class="perf">
@@ -39,8 +44,9 @@
 
   <aside class="xinfo" id="info">
     <p>The columns of Turning Point are cut with patterns grown by a reaction–diffusion process — two simulated substances, one feeding and one consuming the other, settling into stripes, labyrinths and spots.</p>
-    <p>Tap to start a pattern. Drag from it to stretch it — it grows where you pull it; tap elsewhere for another, and drag between them to join them.</p>
-    <p>Press play: a line crosses the plate from left to right, and every tendril it meets sounds a note in its row — the more of the pattern still ahead, the slower it goes.</p>
+    <p><b>Paint</b>: tap to start a pattern; drag from it to stretch it — it grows where you pull it. Tap elsewhere for another, and drag between them to join them.</p>
+    <p><b>Sound</b>: tap the cut shapes — tendrils, cells — to fill them with a colour; each colour is a voice. Tap a filled shape again to empty it.</p>
+    <p>Press play: a line crosses the plate from left to right, and each coloured shape sounds as it meets it, higher the higher it sits. The fewer the shapes still ahead, the faster it goes. You can go on painting and colouring while it plays.</p>
   </aside>
 
   <div class="pframe" id="frame">
@@ -50,16 +56,16 @@
   </div>
 
   <nav class="xtools" aria-label="Pattern and sound">
-    <span class="grp" role="group" aria-label="Pattern">
-      <button type="button" data-mode="lines">Lines</button>
-      <button type="button" data-mode="mixed" class="is-on">Mixed</button>
-      <button type="button" data-mode="cells">Cells</button>
+    <span class="grp" role="group" aria-label="Tool">
+      <button type="button" data-tool="paint" class="is-on" aria-pressed="true">Paint</button>
+      <button type="button" data-tool="sound" aria-pressed="false">Sound</button>
     </span>
-    <span class="grp" role="group" aria-label="Rows">
-      <span class="lbl">Rows</span>
-      <button type="button" data-rows="4">4</button>
-      <button type="button" data-rows="5" class="is-on">5</button>
-      <button type="button" data-rows="6">6</button>
+    <span class="grp" id="palette" role="group" aria-label="Voice" hidden>
+      <button type="button" class="sw is-on" data-voice="bell" style="--c:#f2b632"><i></i>Bell</button>
+      <button type="button" class="sw" data-voice="pluck" style="--c:#e4572e"><i></i>Pluck</button>
+      <button type="button" class="sw" data-voice="keys" style="--c:#3fa7c9"><i></i>Keys</button>
+      <button type="button" class="sw" data-voice="bass" style="--c:#6a4fa3"><i></i>Bass</button>
+      <button type="button" class="sw" data-voice="drum" style="--c:#2e933c"><i></i>Drum</button>
     </span>
     <span class="grp">
       <button type="button" id="play" aria-pressed="false">Play</button>
@@ -95,23 +101,82 @@
     rd.start(Math.ceil(fr.w / cell), Math.ceil(fr.h / cell), cell);
     rd.resize();
 
-    // the three characters: Lines — strongly aligned stripes; Mixed — as before; Cells — the dot-forming regime
-    const MODES = {
-      lines: { regime: [0.0545, 0.062, 0.0545, 0.062], dotBias: -1, anisotropy: 0.95 },
-      mixed: { regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 },
-      cells: { regime: [0.0367, 0.0649, 0.0367, 0.0649], dotBias: 1, anisotropy: 0.1 }
-    };
-    rd.buildParams(MODES.mixed);
+    // one character only (the "mixed" pattern: tendrils, dashes and dots)
+    rd.buildParams({ regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 });
 
-    const CLUSTER_R = 22, PULL_R = 14;   // cells: a new cluster's disc; the band a drag opens
-    let started = false;
+    const CLUSTER_R = 34, PULL_R = 22;   // cells: a new cluster's disc; the band a drag opens (larger brush)
+    const TH = rd.opts.threshold;
+    let started = false, tool = "paint", voice = "bell";
     const allowedAt = (x, y) => { const i = Math.floor(y) * rd.W + Math.floor(x); return x >= 0 && y >= 0 && x < rd.W && y < rd.H && rd.paramPx[i * 4 + 3] > 120; };
-    function cluster(x, y) {   // a tap: a small disc of pattern, growing from its centre
+    function cluster(x, y) {   // a tap: a disc of pattern, growing from its centre
       rd.allow(x, y, CLUSTER_R);
-      rd.seed(x, y, 3);
-      for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, r = 4 + Math.random() * 7; rd.seed(x + Math.cos(a) * r, y + Math.sin(a) * r, 1.6); }
+      rd.seed(x, y, 3.5);
+      for (let i = 0; i < 8; i++) { const a = Math.random() * 6.283, r = 5 + Math.random() * 12; rd.seed(x + Math.cos(a) * r, y + Math.sin(a) * r, 1.8); }
       started = true; hint.classList.add("is-gone");
     }
+
+    /* ---------- Sound: coloured shapes ----------
+       A selection is a point inside one cut shape (a connected run of cut cells) and a voice. Several times a
+       second the grid is read back and each selection's shape found again by flood fill from its point — so the
+       colour follows the shape as the pattern moves; if the point has drifted out, it hops to the nearest cut cell. */
+    const COLOURS = { bell: [242, 182, 50], pluck: [228, 87, 46], keys: [63, 167, 201], bass: [106, 79, 163], drum: [46, 147, 60] };
+    const sels = [];                 // { x, y, voice }
+    let grid = null, label = null, lastScan = 0;
+    const MAX_SHAPE = 9000;          // cells: one shape is never more than this (labyrinths can be one long passage)
+    const cut = (i) => grid[i * 4 + 1] > TH;
+    function nearestCut(x, y, R) {
+      const W = rd.W, H = rd.H; let best = -1, bd = 1e9;
+      for (let j = Math.max(0, y - R); j <= Math.min(H - 1, y + R); j++) for (let i = Math.max(0, x - R); i <= Math.min(W - 1, x + R); i++) {
+        const d = (i - x) ** 2 + (j - y) ** 2; if (d < bd && cut(j * W + i)) { bd = d; best = j * W + i; }
+      }
+      return best;
+    }
+    function scan() {   // read the grid; find every selection's shape; paint the fills
+      const W = rd.W, H = rd.H;
+      grid = rd.readState(0, 0, W, H, grid);
+      label = label && label.length === W * H ? label.fill(0) : new Uint16Array(W * H);
+      const stack = new Int32Array(MAX_SHAPE * 4);
+      sels.forEach((s, k) => {
+        let i0 = Math.floor(s.y) * W + Math.floor(s.x);
+        if (!cut(i0)) { i0 = nearestCut(Math.floor(s.x), Math.floor(s.y), 5); if (i0 < 0) { s.lost = true; return; } s.x = i0 % W + .5; s.y = Math.floor(i0 / W) + .5; }
+        if (label[i0]) return;   // already part of another selection's shape
+        s.lost = false;
+        let n = 0, sp = 0; stack[sp++] = i0; label[i0] = k + 1;
+        while (sp && n < MAX_SHAPE) {
+          const i = stack[--sp]; n++;
+          const x = i % W, nb = [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W];
+          for (const q of nb) if (q >= 0 && q < W * H && !label[q] && cut(q) && sp < stack.length) { label[q] = k + 1; stack[sp++] = q; }
+        }
+      });
+      paintFills(); survey();
+    }
+    const fillCv = document.createElement("canvas"), fg = fillCv.getContext("2d");
+    function paintFills() {
+      const W = rd.W, H = rd.H;
+      if (fillCv.width !== W || fillCv.height !== H) { fillCv.width = W; fillCv.height = H; }
+      const img = fg.createImageData(W, H), d = img.data;
+      for (let i = 0; i < W * H; i++) {
+        const k = label[i]; if (!k) continue;
+        const c = COLOURS[sels[k - 1].voice]; d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 225;
+      }
+      fg.putImageData(img, 0, 0);
+    }
+    function soundAt(x, y, toggle, rescan = true) {   // colour (or empty) the shape under a point
+      const W = rd.W;
+      if (!grid) scan();
+      const xi = Math.floor(x), yi = Math.floor(y), i0 = nearestCut(xi, yi, 3);
+      if (i0 < 0) return false;
+      const k = label[i0];
+      if (k) {
+        const s = sels[k - 1];
+        if (toggle && s.voice === voice) sels.splice(k - 1, 1); else s.voice = voice;
+      } else sels.push({ x: i0 % W + .5, y: Math.floor(i0 / W) + .5, voice });
+      hint.classList.toggle("is-gone", sels.length > 0);
+      if (rescan) scan();
+      return true;
+    }
+
+    /* ---------- pointer: Paint grows the pattern; Sound colours shapes ---------- */
     let drag = null;
     const cellAt = e => { const b = canvas.getBoundingClientRect(); return [(e.clientX - b.left) / cell, (e.clientY - b.top) / cell]; };
     canvas.addEventListener("pointerdown", e => {
@@ -122,30 +187,51 @@
     canvas.addEventListener("pointermove", e => {
       if (!drag) return;
       if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
-      if (!drag.moved) { drag.moved = true; if (!drag.inside) cluster(drag.last[0], drag.last[1]); }
+      const [x, y] = cellAt(e), [lx, ly] = drag.last;
+      if (tool === "sound") {   // dragging colours every shape it passes over (never empties)
+        if (!drag.moved) { drag.moved = true; soundAt(lx, ly, false); }
+        const d = Math.hypot(x - lx, y - ly), n = Math.max(1, Math.ceil(d / 4));
+        for (let i = 1; i <= n; i++) { const px = lx + (x - lx) * i / n, py = ly + (y - ly) * i / n; if (!label || !label[Math.floor(py) * rd.W + Math.floor(px)]) soundAt(px, py, false, false); }
+        drag.last = [x, y]; return;
+      }
+      if (!drag.moved) { drag.moved = true; if (!drag.inside) cluster(lx, ly); }
       // pulling: open a band along the path; the pattern grows on into it (a few seeds help it along)
-      const [x, y] = cellAt(e), [lx, ly] = drag.last, d = Math.hypot(x - lx, y - ly), n = Math.max(1, Math.ceil(d / 3));
+      const d = Math.hypot(x - lx, y - ly), n = Math.max(1, Math.ceil(d / 3));
       for (let i = 1; i <= n; i++) {
         const px = lx + (x - lx) * i / n, py = ly + (y - ly) * i / n;
         rd.allow(px, py, PULL_R);
-        if ((drag.sinceSeed += d / n) > 10) { rd.seed(px, py, 1.8); drag.sinceSeed = 0; }
+        if ((drag.sinceSeed += d / n) > 12) { rd.seed(px, py, 2); drag.sinceSeed = 0; }
       }
       drag.last = [x, y];
     });
-    const endDrag = () => { if (drag && !drag.moved) cluster(drag.last[0], drag.last[1]); drag = null; };
+    const endDrag = () => {
+      if (drag && !drag.moved) { if (tool === "sound") soundAt(drag.last[0], drag.last[1], true); else cluster(drag.last[0], drag.last[1]); }
+      else if (drag && tool === "sound") scan();   // a colouring drag: the shapes found once, at the end
+      drag = null;
+    };
     canvas.addEventListener("pointerup", endDrag);
     canvas.addEventListener("pointercancel", () => { drag = null; });
 
-    let mode = "mixed";
-    document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => {
-      mode = b.dataset.mode;
-      document.querySelectorAll("[data-mode]").forEach(o => o.classList.toggle("is-on", o === b));
-      const m = MODES[mode];
-      rd.buildParams(m);
-      // re-grow what is there in the new character: a ring sweeps the plate, clearing and re-seeding
-      rd.ripple(rd.W / 2, rd.H / 2, Math.hypot(rd.W, rd.H) / 2 + 4, { dotBias: m.dotBias, anisotropy: m.anisotropy, steps: 700, band: 3 });
+    const HINTS = { paint: "tap to start a pattern", sound: "tap a shape to colour it" };
+    document.querySelectorAll("[data-tool]").forEach(b => b.addEventListener("click", () => {
+      tool = b.dataset.tool;
+      document.querySelectorAll("[data-tool]").forEach(o => { o.classList.toggle("is-on", o === b); o.setAttribute("aria-pressed", o === b); });
+      $("palette").hidden = tool !== "sound";
+      document.body.classList.toggle("sound", tool === "sound");
+      hint.textContent = tool === "sound" && !started ? "paint a pattern first" : HINTS[tool];
+      hint.classList.toggle("is-gone", tool === "paint" ? started : sels.length > 0);
+      $("clear").textContent = tool === "sound" ? "Clear colours" : "Clear";
     }));
-    $("clear").addEventListener("click", () => { rd.clear(); rd.disallowAll(); started = false; hint.classList.remove("is-gone"); });
+    document.querySelectorAll("[data-voice]").forEach(b => b.addEventListener("click", () => {
+      voice = b.dataset.voice;
+      document.querySelectorAll("[data-voice]").forEach(o => o.classList.toggle("is-on", o === b));
+    }));
+    $("clear").addEventListener("click", () => {
+      sels.length = 0;
+      if (tool === "paint") { rd.clear(); rd.disallowAll(); started = false; }
+      if (grid) scan();
+      hint.classList.remove("is-gone");
+    });
 
     const info = $("info"), infoBtn = $("infoBtn");
     infoBtn.addEventListener("click", () => {
@@ -154,18 +240,30 @@
       infoBtn.textContent = open ? "Close" : "About";
     });
 
-    /* ---------- the synthesiser ----------
-       The plate is cut into 4–6 rows. In play, a line sweeps it from left to right; every tendril it enters
-       (a run of cut cells crossing the line) sounds a note in that row's voice, its pitch from how high in
-       the row it sits. The sweep's speed — the tempo — follows how much of the pattern is still ahead. */
-    let rows = 5, playing = false, px = 0, ahead = null, tempoTxt = "";
-    const NOTE_RATE = 18;   // notes a second the tempo aims for: the sweep slows where much of the pattern is ahead, speeds up where little is
-    const TH = rd.opts.threshold;
-    document.querySelectorAll("[data-rows]").forEach(b => b.addEventListener("click", () => {
-      rows = +b.dataset.rows;
-      document.querySelectorAll("[data-rows]").forEach(o => o.classList.toggle("is-on", o === b));
-    }));
-
+    /* ---------- playing ----------
+       A line sweeps the plate from left to right; a coloured shape sounds in its voice wherever the line enters
+       it, pitched by its height on the plate (low to high over two octaves). The tempo follows how many
+       coloured entries are still ahead: few ahead, it hurries on; many, it slows to give each its place. */
+    let playing = false, px = 0, tempoTxt = "", ahead = null;
+    const NOTE_RATE = 4;   // notes a second the tempo aims for
+    // where the line enters a coloured shape: column by column, the shapes present (with their middle height)
+    // that weren't in the column before; summed from the right for the tempo
+    let enters = null;
+    function survey() {
+      if (!label) return;
+      const W = rd.W, H = rd.H, per = new Float32Array(W + 1);
+      let prev = new Set();
+      enters = new Array(W);
+      for (let c = 0; c < W; c++) {
+        const sum = new Map();
+        for (let j = 0; j < H; j++) { const k = label[j * W + c]; if (k) { const q = sum.get(k); if (q) { q[0] += j; q[1]++; } else sum.set(k, [j, 1]); } }
+        enters[c] = [];
+        for (const [k, q] of sum) if (!prev.has(k)) enters[c].push([k, q[0] / q[1]]);
+        prev = new Set(sum.keys());
+      }
+      for (let c = W - 1; c >= 1; c--) per[c] = per[c + 1] + enters[c].length;
+      ahead = per;
+    }
     let ac = null, out = null;
     function audio() {
       if (!ac) {
@@ -177,29 +275,21 @@
     }
     const SCALE = [0, 3, 5, 7, 10];   // minor pentatonic
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
-    const VOICES = { 4: ["bell", "pluck", "bass", "drum"], 5: ["bell", "pluck", "keys", "bass", "drum"], 6: ["bell", "pluck", "keys", "bass", "hat", "drum"] };
-    const BASE = { bell: 81, pluck: 69, keys: 57, bass: 33 };
+    const BASE = { bell: 72, pluck: 60, keys: 55, bass: 31 };
     function play(kind, deg, vel) {
       const t = ac.currentTime + 0.01;
       if (kind === "drum") {
         const o = ac.createOscillator(), g = ac.createGain();
-        o.frequency.setValueAtTime(110 + deg * 12, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.2);
+        o.frequency.setValueAtTime(90 + deg * 14, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.2);
         g.gain.setValueAtTime(0.9 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
         o.connect(g).connect(out); o.start(t); o.stop(t + 0.32); return;
       }
-      if (kind === "hat") {
-        const n = ac.createBufferSource(), b = ac.createBuffer(1, ac.sampleRate * 0.08, ac.sampleRate), d = b.getChannelData(0);
-        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-        const f = ac.createBiquadFilter(), g = ac.createGain(); f.type = "highpass"; f.frequency.value = 6000 + deg * 800;
-        g.gain.setValueAtTime(0.35 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-        n.buffer = b; n.connect(f).connect(g).connect(out); n.start(t); return;
-      }
-      const midi = BASE[kind] + SCALE[deg % 5] + 12 * Math.floor(deg / 5), dur = { bell: 1.4, pluck: 0.5, keys: 0.35, bass: 0.55 }[kind];
+      const midi = BASE[kind] + SCALE[deg % 5] + 12 * Math.floor(deg / 5), dur = { bell: 1.4, pluck: 0.5, keys: 0.4, bass: 0.6 }[kind];
       const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
       o.type = { bell: "sine", pluck: "triangle", keys: "square", bass: "sawtooth" }[kind];
       o.frequency.value = mtof(midi);
       f.type = "lowpass"; f.frequency.value = { bell: 8000, pluck: 4000, keys: 1600, bass: 500 }[kind];
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((kind === "keys" ? 0.12 : 0.3) * vel, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((kind === "keys" ? 0.13 : 0.32) * vel, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
       o.connect(f).connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05);
       if (kind === "bell") {   // an inharmonic partial makes it ring
         const o2 = ac.createOscillator(), g2 = ac.createGain(); o2.frequency.value = mtof(midi) * 2.76;
@@ -207,71 +297,48 @@
         o2.connect(g2).connect(out); o2.start(t); o2.stop(t + dur);
       }
     }
-
-    // tendrils entered between column c-1 and column c: runs of cells cut at c but not at c-1
-    function entries(buf, w, ci, H) {   // buf: columns [c-1, c] side by side (w wide), ci: index of c in buf
-      const ev = []; let run = -1;
-      for (let j = 0; j <= H; j++) {
-        const hit = j < H && buf[(j * w + ci) * 4 + 1] > TH && buf[(j * w + ci - 1) * 4 + 1] <= TH;
-        if (hit && run < 0) run = j;
-        if (!hit && run >= 0) { ev.push((run + j - 1) / 2); run = -1; }
-      }
-      return ev;
-    }
-    // at the start of each sweep: how many entries each column holds, summed from the right (the pattern still ahead)
-    function survey() {
-      const W = rd.W, H = rd.H, all = rd.readState(0, 0, W, H), per = new Float32Array(W + 1);
-      for (let c = W - 1; c >= 1; c--) per[c] = per[c + 1] + entries(all, W, c, H).length;
-      return per;
-    }
     const flashes = [], lastNote = {};
-    let colBuf = null;
     function sweep(dt) {
-      if (!ahead) ahead = survey();
       const W = rd.W, H = rd.H, left = Math.max(1, W - px);
-      const density = ahead[Math.min(W, Math.max(1, Math.floor(px)))] / left;            // entries per column still ahead
-      const speed = Math.min(W / 3.5, Math.max(W / 24, NOTE_RATE / Math.max(density, 1e-3)));   // slower where much is ahead
-      tempoTxt = Math.round(60 * speed / (W / 16)) + " bpm";                           // sixteen beats to a sweep
+      const density = ahead ? ahead[Math.min(W, Math.max(1, Math.floor(px)))] / left : 0;
+      const speed = Math.min(W / 5, Math.max(W / 20, NOTE_RATE / Math.max(density, 1e-3)));   // a sweep takes 5–20 s
+      tempoTxt = Math.round(60 * speed / (W / 16)) + " bpm";                         // sixteen beats to a sweep
       const from = Math.floor(px), to = Math.min(W - 1, Math.floor(px + speed * dt));
-      if (to > from) {
-        const w = to - from + 1;
-        colBuf = rd.readState(from, 0, w, H, colBuf);
-        const voices = VOICES[rows], rh = H / rows, now = performance.now();
-        for (let c = from + 1; c <= to; c++) for (const y of entries(colBuf, w, c - from, H)) {
-          const r = Math.min(rows - 1, Math.floor(y / rh)), yr = (y - r * rh) / rh;
-          if (now - (lastNote[r] || 0) < 45) continue;   // a row speaks at most every 45 ms
-          lastNote[r] = now;
-          play(voices[r], Math.floor((1 - yr) * 7), 0.6 + 0.4 * Math.random());
-          flashes.push({ x: c, y, t: now });
+      if (enters && to > from) {
+        const now = performance.now();
+        for (let c = from + 1; c <= to; c++) for (const [k, y] of enters[c]) {
+          const sel = sels[k - 1];
+          if (!sel || now - (lastNote[k] || 0) < 60) continue;
+          lastNote[k] = now;
+          play(sel.voice, Math.floor((1 - y / H) * 10), 0.7 + 0.3 * Math.random());
+          flashes.push({ x: c, y, t: now, c: COLOURS[sel.voice] });
         }
       }
       px += speed * dt;
-      if (px >= W - 1) { px = 1; ahead = null; }   // round again, re-surveying the pattern as it is now
+      if (px >= W - 1) px = 1;
     }
     $("play").addEventListener("click", () => {
       playing = !playing;
-      if (playing) { audio(); px = 1; ahead = null; }
+      if (playing) { audio(); px = 1; }
       $("play").textContent = playing ? "Pause" : "Play";
       $("play").setAttribute("aria-pressed", playing);
     });
     addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body) { e.preventDefault(); $("play").click(); } });
 
-    /* ---------- the overlay: rows, the line, and where it struck ---------- */
+    /* ---------- the overlay: the coloured shapes, and when playing the line and where it struck ---------- */
     const og = over.getContext("2d");
     function drawOver() {
       const dpr = Math.min(devicePixelRatio || 1, 2), w = over.clientWidth, h = over.clientHeight;
       if (over.width !== Math.round(w * dpr)) { over.width = Math.round(w * dpr); over.height = Math.round(h * dpr); }
       og.setTransform(dpr, 0, 0, dpr, 0, 0); og.clearRect(0, 0, w, h);
+      if (sels.length && fillCv.width) { og.imageSmoothingEnabled = true; og.drawImage(fillCv, 0, 0, rd.W * cell, rd.H * cell); }
       if (!playing) { flashes.length = 0; return; }
-      og.strokeStyle = "rgba(31,28,25,.12)"; og.lineWidth = 1; og.setLineDash([3, 5]);
-      for (let r = 1; r < rows; r++) { const y = Math.round(r * h / rows) + .5; og.beginPath(); og.moveTo(0, y); og.lineTo(w, y); og.stroke(); }
-      og.setLineDash([]);
       const x = px * cell; og.strokeStyle = "#449ad4"; og.lineWidth = 1.5; og.beginPath(); og.moveTo(x, 0); og.lineTo(x, h); og.stroke();
       const now = performance.now();
       for (let i = flashes.length - 1; i >= 0; i--) {
-        const f = flashes[i], k = (now - f.t) / 450;
+        const f = flashes[i], k = (now - f.t) / 500;
         if (k >= 1) { flashes.splice(i, 1); continue; }
-        og.fillStyle = `rgba(68,154,212,${(1 - k) * .8})`; og.beginPath(); og.arc(f.x * cell, f.y * cell, 3 + 9 * k, 0, 6.283); og.fill();
+        og.strokeStyle = `rgba(${f.c.join(",")},${(1 - k) * .9})`; og.lineWidth = 2; og.beginPath(); og.arc(f.x * cell, f.y * cell, 4 + 14 * k, 0, 6.283); og.stroke();
       }
     }
 
@@ -281,6 +348,7 @@
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       if (!document.hidden) {
         rd.step(14);
+        if (sels.length && now - lastScan > 220) { lastScan = now; scan(); }   // the colours follow the moving shapes
         if (playing && started) sweep(dt);
         rd.render([{ x: 0, y: 0, w: canvas.clientWidth, h: canvas.clientHeight }], { fill: 0 });
         drawOver();
