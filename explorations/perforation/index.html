@@ -24,7 +24,6 @@
     .perf .xtools #tempo { color: #6f675f; min-width: 5em; font-variant-numeric: tabular-nums; }
     .perf .xtools .key { display: inline-flex; align-items: baseline; gap: .45em; color: #6f675f; white-space: nowrap; }
     .perf .xtools .key i { width: .75em; height: .75em; border-radius: 50%; background: var(--c); display: inline-block; transform: translateY(.06em); }
-    .perf .xtools #texSel button[aria-pressed="true"] { color: #fff; }
     .bands { position: fixed; width: 3px; pointer-events: none; }
     .bands i { position: absolute; left: 0; width: 100%; background: var(--c); opacity: .85; }
     .perf .xtools .key.ring i { background: none; box-shadow: inset 0 0 0 1px #8a8178; }
@@ -45,7 +44,7 @@
     <p>The columns of Turning Point are cut with patterns grown by a reaction–diffusion process — two simulated substances, one feeding and one consuming the other, settling into tendrils, labyrinths and spots.</p>
     <p>The plate is cut into squares, as the columns are, and the squares are grouped into blocks — single squares, pairs, bars, corners. Each block holds the pattern at its own grain, dense, medium or open, cut through the plate or drawn only as an outline.</p>
     <p>Tap to start a pattern; drag from it to stretch it — it grows where you pull it. Pull it across the edge of a square and that square takes on the pattern you brought: it joins the block you came from, with its grain and its cut.</p>
-    <p>Press play: a line crosses the plate from left to right. Every cut shape it passes through — a tendril, a cell — sounds once, in the voice of the rows it sits in: the top two rows pluck, the next two play keys, the rows below them bass — each higher the higher it sits within its rows. Outlined squares stay silent. The more shapes still ahead, the slower it goes. The pattern can be grown, and pulled about, while it plays.</p>
+    <p>Press play: a line crosses the plate from left to right. Every cut shape it passes through — a tendril, a cell — sounds once, in the voice of the rows it sits in. The rows play in pairs, from the top: pluck, keys, bass, and round again — marked beside the plate — each shape higher the higher it sits within its pair. Outlined squares stay silent. The more shapes still ahead, the slower it goes. The pattern can be grown, and pulled about, while it plays.</p>
   </aside>
 
   <div class="pframe" id="frame">
@@ -59,15 +58,11 @@
       <button type="button" id="play" aria-pressed="false">Play</button>
       <span id="tempo" aria-live="off"></span>
     </span>
-    <span class="grp" aria-label="Voices: the top two rows pluck, the next two keys, the rest bass; outlined squares are silent">
-      <span class="key" style="--c:#e4572e"><i></i>Rows 1–2 · pluck</span>
-      <span class="key" style="--c:#3fa7c9"><i></i>3–4 · keys</span>
-      <span class="key" style="--c:#6a4fa3"><i></i><span id="bassRows">5–7</span> · bass</span>
+    <span class="grp" aria-label="Voices go by pairs of rows, marked beside the plate: pluck, keys, bass, and round again; outlined squares are silent">
+      <span class="key" style="--c:#e4572e"><i></i>Pluck</span>
+      <span class="key" style="--c:#3fa7c9"><i></i>Keys</span>
+      <span class="key" style="--c:#6a4fa3"><i></i>Bass</span>
       <span class="key ring"><i></i>Outline · silent</span>
-    </span>
-    <span class="grp" id="texSel" aria-label="Plate">
-      <button type="button" data-tex="bamboo" aria-pressed="true">Bamboo</button>
-      <button type="button" data-tex="coral" aria-pressed="false">Coral</button>
     </span>
     <button type="button" id="clear">Clear</button>
   </nav>
@@ -95,12 +90,12 @@
     const fr = placeFrame();
 
     /* ---------- the pattern: dense, and only where it has been let grow ---------- */
-    const DENSER = 1.2;                                                     // the whole pattern this much finer than the home page's
+    const DENSER = 1.5;                                                     // the whole pattern this much finer than the home page's
     const cell0 = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720) / DENSER;   // css px per sim cell, at the frame's first size
-    /* the plate's surface: one of two pictures, laid over the whole frame at its own proportions (each file is
-       square, the picture in its top TEX_A of the height, a mirror of its lower edge below) */
+    /* the plate's surface: one of two pictures, picked at random on each visit (?tex=bamboo or ?tex=coral to
+       choose). Each file is square, the picture in its top TEX_A of the height, a mirror of its lower edge below. */
     const TEXTURES = { bamboo: "../../assets/img/perforation/bamboo.jpg", coral: "../../assets/img/perforation/coral.jpg" }, TEX_A = 928 / 1232;
-    let texName = /[?&]tex=coral\b/.test(location.search) ? "coral" : "bamboo";
+    const texName = (location.search.match(/[?&]tex=(bamboo|coral)\b/) || [])[1] || (Math.random() < 0.5 ? "bamboo" : "coral");
     const rd = new TurningPattern(canvas, { texture: TEXTURES[texName], texturePx: 620, seed: 11, allowAll: false, drift: 0.00005,
                                             regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 });
     if (!rd.ok) { hint.textContent = "This piece needs WebGL2"; return; }
@@ -114,13 +109,16 @@
        phone), grouped into blocks by js/tiles.js — single squares, 2 × 2, bars and corners. Each block holds
        the pattern at its own grain and is drawn as steel or as an ink outline. A block shows its own part of
        the one pattern, drawn larger about its middle (z < 1: more open), so what grows in a block stays in it. */
-    const ROWS = mobile ? Math.max(3, Math.round(fr.h / (fr.w / 4))) : 7;
-    const COLS = mobile ? 4 : Math.max(1, Math.round(fr.w / (fr.h / ROWS)));
+    const ROWS = mobile ? Math.max(3, Math.round(fr.h / (fr.w / 5))) : 9;
+    const COLS = mobile ? 5 : Math.max(1, Math.round(fr.w / (fr.h / ROWS)));
     const Z = [1, 0.68, 0.46];                        // grain: dense, medium, open
-    // the voices go by rows, two rows each from the top: pluck, keys, then bass for the rest
-    const VOICE = ["pluck", "keys", "bass"];
-    const bandOf = r => Math.min(VOICE.length - 1, Math.floor(r / 2));
-    const BAND_ROWS = VOICE.map((_, k) => [2 * k, k === VOICE.length - 1 ? ROWS : 2 * k + 2]);   // [first row, past the last]
+    // the voices go by rows, in pairs from the top: pluck, keys, bass, and round again (a last row on its own
+    // joins the pair above it)
+    const VOICE = ["pluck", "keys", "bass"], VOICE_HEX = ["#e4572e", "#3fa7c9", "#6a4fa3"];
+    const BANDS = [];                                  // [first row, past the last]
+    for (let r = 0; r < ROWS; r += 2) BANDS.push([r, Math.min(ROWS, r + 2)]);
+    if (BANDS.length > 1 && BANDS[BANDS.length - 1][1] - BANDS[BANDS.length - 1][0] < 2) BANDS[BANDS.length - 2][1] = BANDS.pop()[1];
+    const bandOf = r => Math.max(0, BANDS.findIndex(([a, b]) => r >= a && r < b));
     const DENS_W = [0.4, 0.3, 0.3];                   // how often each grain is dealt
     const blocks = [], owner = new Int32Array(ROWS * COLS);   // owner: the block each square belongs to
     {
@@ -130,7 +128,9 @@
         let c0 = 1e9, c1 = -1, r0 = 1e9, r1 = -1;
         for (const q of pb.parts) { c0 = Math.min(c0, q.c); c1 = Math.max(c1, q.c + q.cw); r0 = Math.min(r0, q.r); r1 = Math.max(r1, q.r + q.rh); }
         const x = Math.random(), dens = x < DENS_W[0] ? 0 : x < DENS_W[0] + DENS_W[1] ? 1 : 2;
-        const id = blocks.push({ style: pb.style, dens, ax: (c0 + c1) / 2 / COLS, ay: (r0 + r1) / 2 / ROWS }) - 1;   // its middle, as a share of the frame
+        const id = blocks.push({ style: pb.style, dens, ax: (c0 + c1) / 2 / COLS, ay: (r0 + r1) / 2 / ROWS,   // its middle, as a share of the frame
+                                 bx: c0 / COLS, by: r0 / ROWS, bw: (c1 - c0) / COLS, bh: (r1 - r0) / ROWS,       // its box
+                                 ux: Math.random(), uy: Math.random() }) - 1;                                     // where in the picture it is cut from
         for (const q of pb.parts) for (let j = 0; j < q.rh; j++) for (let i = 0; i < q.cw; i++) owner[(q.r + j) * COLS + q.c + i] = id;
       }
     }
@@ -235,7 +235,7 @@
         voice[n] = bandOf(Math.min(ROWS - 1, Math.floor((sy / cnt + 0.5) * cellPx / fh * ROWS)));   // the rows its middle sits in
       }
       kinds = new Array(n + 1);
-      for (let k = 1; k <= n; k++) kinds[k] = sizes[k] < 4 ? null : VOICE[voice[k]];
+      for (let k = 1; k <= n; k++) kinds[k] = sizes[k] < 4 ? null : VOICE[voice[k] % VOICE.length];
       bands = voice;   // specks under 4 points stay silent
       // where the line enters each shape (with the shape's middle height in that column)
       enters = new Array(W); ahead = new Float32Array(W + 1);
@@ -295,7 +295,7 @@
         const step = Math.max(1, Math.ceil(due.length / MAX_PER_STEP));
         for (let i = 0; i < due.length; i += step) {
           const [c, [k, y, cellI]] = due[i], kind = kinds[k];
-          const [r0, r1] = BAND_ROWS[bands[k]], at = ((y + 0.5) * cellPx / fh * ROWS - r0) / (r1 - r0);   // where in its rows, 0 top … 1 bottom
+          const [r0, r1] = BANDS[bands[k]], at = ((y + 0.5) * cellPx / fh * ROWS - r0) / (r1 - r0);   // where in its rows, 0 top … 1 bottom
           play(kind, Math.max(0, Math.min(7, Math.floor((1 - at) * 8))), 0.7 + 0.3 * Math.random());       // a little over an octave and a half
           flashes.push({ cellI, t: now, rgb: VOICE_RGB[kind], x: c, y });
         }
@@ -346,8 +346,7 @@
 
     // which rows play which voice: a thin coloured mark beside the frame (desktop)
     const bandsEl = $("bands");
-    bandsEl.innerHTML = BAND_ROWS.map(([a, b], k) => `<i style="--c:${["#e4572e", "#3fa7c9", "#6a4fa3"][k]};top:${a / ROWS * 100}%;height:calc(${(b - a) / ROWS * 100}% - 4px);margin-top:2px"></i>`).join("");
-    $("bassRows").textContent = ROWS > 5 ? "5–" + ROWS : "5";
+    bandsEl.innerHTML = BANDS.map(([a, b], k) => `<i style="--c:${VOICE_HEX[k % VOICE.length]};top:${a / ROWS * 100}%;height:calc(${(b - a) / ROWS * 100}% - 4px);margin-top:2px"></i>`).join("");
     function placeBands() {
       const r = frame.getBoundingClientRect();
       bandsEl.hidden = mobile;
@@ -357,22 +356,18 @@
     addEventListener("resize", () => {
       const f = placeFrame(); fw = f.w; fh = f.h; cellPx = rd.cell = cell0 * fw / fw0; mapDirty = true; rd.resize(); placeBands();
     });
-    document.querySelectorAll("#texSel button").forEach(b => b.addEventListener("click", () => {
-      if (b.dataset.tex === texName) return;
-      texName = b.dataset.tex; rd.loadTexture(TEXTURES[texName]);
-      document.querySelectorAll("#texSel button").forEach(x => x.setAttribute("aria-pressed", x === b));
-    }));
-    document.querySelectorAll("#texSel button").forEach(x => x.setAttribute("aria-pressed", x.dataset.tex === texName));
     // one rectangle per square, through its block: grain (zoom), drawn about the block's middle, steel or outline
     function rects() {
       const out = [], sw = fw / COLS, sh = fh / ROWS;
-      // the picture covers the frame, centred, whichever grain a block is drawn at
-      const T = rd.opts.texturePx = Math.max(fw, fh / TEX_A), cx = (1 - fw / T) / 2, cy = (TEX_A - fh / T) / 2;
+      // the picture at the frame's size, whichever grain a block is drawn at; each block cut from its own part of it
+      const T = rd.opts.texturePx = Math.max(fw, fh / TEX_A);
       for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
         const b = blocks[owner[r * COLS + c]], z = Z[b.dens], x0 = Math.round(c * sw), y0 = Math.round(r * sh);
         out.push({ x: x0, y: y0, w: Math.round((c + 1) * sw) - x0, h: Math.round((r + 1) * sh) - y0,
                    ox: b.ax * fw * (1 - z) / z, oy: b.ay * fh * (1 - z) / z, style: b.style, zoom: z });
-        const q = out[out.length - 1]; q.tx = cx - q.ox / T; q.ty = cy - q.oy / T;
+        const q = out[out.length - 1];
+        const u = b.ux * Math.max(0, 1 - b.bw * fw / T), v = b.uy * Math.max(0, TEX_A - b.bh * fh / T);   // its box's corner, in the picture
+        q.tx = u - (b.bx * fw + q.ox) / T; q.ty = v - (b.by * fh + q.oy) / T;
       }
       return out;
     }
@@ -380,7 +375,7 @@
     function tick(now) {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       if (!document.hidden) {
-        rd.step(14);
+        rd.step(mobile ? 14 : 17);   // a little more growth a frame for the finer pattern
         if (playing && started) {
           if (now - lastScan > 250) { lastScan = now; scan(); }   // the shapes as they are now (they keep moving)
           sweep(dt);
