@@ -449,23 +449,23 @@ const DEFAULT_PAGES = () => [
     T("Intro text", 6, 2.62, 4, 4.9, { sel: ".intro p", align: "justify", text: INTRO_BODY }),
     T("Links", 12.4, .3, 1.6, .55, { sel: ".meta", parent: "Right column (.side)", size: .218, lh: 1.05, align: "right", text: "instagram\nyoutube" }),
     E("mark", "Outline square", 14.085, .065, .71, .71, { sel: ".frame > .mark" }),
-    T("Title", 11, 4.64, 3, .5, { sel: ".title", parent: "Right column (.side)", font: "display", size: .42, lh: 1, color: "accent", text: "Turning Point." }),
-    T("Menu", 11, 5.64, 3, 1.75, { sel: ".nav", parent: "Right column (.side)", font: "display-italic", size: .42, lh: 1, text: "Explore.\nStructure.\nEvents.\nCredits." }),
+    T("Title", 11, 4.64, 3, .5, { sel: ".title", parent: "Right column (.side)", font: "display", size: .42, lh: 1, color: "accent", text: "Turning Point" }),
+    T("Menu", 11, 5.64, 3, 1.75, { sel: ".nav", parent: "Right column (.side)", font: "display-italic", size: .42, lh: 1, text: "Explore\nStructure\nEvents\nCredits" }),
     strip(false)
   ]},
   { id: "section", name: "Section (Credits)", hash: "#credits", builtin: true, els: [
     E("area", "Section (.panel)", 0, 1, 14, 7, { sel: ".frame > .panel" }),
-    T("Section title", 0, 1.38, 6, .5, { sel: ".phead h2", parent: "Section (.panel)", font: "display", size: .44, lh: 1, text: "4 Credits." }),
+    T("Section title", 0, 1.38, 6, .5, { sel: ".phead h2", parent: "Section (.panel)", font: "display", size: .44, lh: 1, text: "4 Credits" }),
     T("Lede", 6, 1.2, 4, .65, { sel: ".phead .lede", parent: "Section (.panel)", text: "Turning Point was conceived, designed and built at Anant University." }),
-    T("Back", 11, 1.5, 3, .36, { sel: ".phead .back", parent: "Section (.panel)", font: "display-italic", size: .32, lh: 1, align: "right", color: "accent", text: "Back." }),
+    T("Back", 11, 1.5, 3, .36, { sel: ".phead .back", parent: "Section (.panel)", font: "display-italic", size: .32, lh: 1, align: "right", color: "accent", text: "Back" }),
     T("Content (credits)", 0, 2, 14, 3.4, { sel: ".panel > .credits", parent: "Section (.panel)", size: .19, lh: 1.32, cols: 3, text: "Concept & design\nName Surname\nName Surname\nName Surname\nName Surname\n\nPattern & computation\nName Surname\nName Surname\nName Surname\n\nFabrication\nName Surname\nName Surname\n\nSite & structure\nName Surname\nName Surname\nName Surname" }),
     strip(true)
   ]},
   { id: "feature", name: "Structure & Process", hash: "#structure", builtin: true, els: [
     E("area", "Section (.panel.is-feat)", 0, 0, 14, 8, { sel: ".frame > .panel.is-feat" }),
     E("image", "Image carousel", 0, 0, 9, 8, { sel: ".feat__imgbox", parent: "Section (.panel.is-feat)" }),
-    T("Title over image", .5, .63, 6, .5, { sel: ".feat__title", parent: "Section (.panel.is-feat)", font: "display", size: .44, lh: 1, color: "white", text: "2 Structure & Process." }),
-    T("Back", 12.5, .99, 1.5, .36, { sel: ".feat__back", parent: "Section (.panel.is-feat)", font: "display-italic", size: .3, lh: 1, align: "right", color: "accent", text: "Back." }),
+    T("Title over image", .5, .63, 6, .5, { sel: ".feat__title", parent: "Section (.panel.is-feat)", font: "display", size: .44, lh: 1, color: "white", text: "2 Structure & Process" }),
+    T("Back", 12.5, .99, 1.5, .36, { sel: ".feat__back", parent: "Section (.panel.is-feat)", font: "display-italic", size: .3, lh: 1, align: "right", color: "accent", text: "Back" }),
     T("Text column", 9.5, 1.5, 4, 6.5, { sel: ".feat__text", parent: "Section (.panel.is-feat)", size: .2, lh: 1.3, align: "justify", text: "Four columns in dynamic balance\n\n" + LOREM + "\n\n" + LOREM }),
     T("Image caption bar", .5, 7.45, 8, .26, { sel: ".feat__foot", parent: "Section (.panel.is-feat)", size: .17, lh: 1.2, color: "white", text: "1 / 6   ‹  ›   Caption for the image" }),
     strip(true)
@@ -473,8 +473,8 @@ const DEFAULT_PAGES = () => [
   { id: "explore", name: "Explore (cards)", hash: "#explore", builtin: true, els: [
     E("area", "Section (.panel.is-cards)", 0, 0, 14, 8, { sel: ".frame > .panel.is-cards" }),
     E("area", "Card track (cut at col 13)", 0, 1.39, 13, 6.61, { sel: ".panel.is-cards .htrack", parent: "Section (.panel.is-cards)" }),
-    T("Section title", 0, .6, 5, .5, { sel: ".panel.is-cards .phead h2", parent: "Section (.panel.is-cards)", font: "display", size: .44, lh: 1, text: "1 Explore." }),
-    T("Back", 12.5, .99, 1.5, .36, { sel: ".panel.is-cards .phead .back", parent: "Section (.panel.is-cards)", font: "display-italic", size: .3, lh: 1, align: "right", color: "accent", text: "Back." }),
+    T("Section title", 0, .6, 5, .5, { sel: ".panel.is-cards .phead h2", parent: "Section (.panel.is-cards)", font: "display", size: .44, lh: 1, text: "1 Explore" }),
+    T("Back", 12.5, .99, 1.5, .36, { sel: ".panel.is-cards .phead .back", parent: "Section (.panel.is-cards)", font: "display-italic", size: .3, lh: 1, align: "right", color: "accent", text: "Back" }),
     ...["Confluence", "Metamorphosis", "Flux", "Emergence", "Perforation"].map((t, i) =>
       E("card", "Card " + (i + 1), i * 4.13, 1.39, 3.72, 6.61, { sel: i ? "" : ".panel.is-cards .htrack > .card", num: "0" + (i + 1), ttl: t, numSize: .53, ttlSize: .42 })),
     strip(true)
@@ -1400,19 +1400,19 @@ function binding(e, p) {
     get: d => (d.intro || [])[0] || "", put: (d, v) => { d.intro = d.intro || []; d.intro[0] = v.trim(); } };
   if (s === ".intro p") return { where: "Introduction, the paragraphs after the first",
     get: d => (d.intro || []).slice(1).join("\n\n"), put: (d, v) => { d.intro = [(d.intro || [])[0] || "", ...paras(v)]; } };
-  if (s === ".title") return { where: "Title", get: d => d.title || "", put: (d, v) => { d.title = v.trim(); }, shown: v => v + "." };
+  if (s === ".title") return { where: "Title", get: d => d.title || "", put: (d, v) => { d.title = v.trim(); }, shown: v => v };
   if (s === ".meta") return { where: "Line beside the title (social links are edited there too)",
     get: d => d.meta || "", put: (d, v) => { d.meta = v.trim(); },
     shown: (v, d) => [v, ...(d.socials || []).map(x => String(x.label || "").toLowerCase())].filter(Boolean).join("\n") };
   if (s === ".nav") return { where: "Section names, one per line",
     get: d => d.sections.map(x => x.label).join("\n"),
     put: (d, v) => v.split("\n").map(x => x.trim().replace(/\.$/, "")).filter(Boolean).forEach((l, i) => { if (d.sections[i]) d.sections[i].label = l; }),
-    shown: v => v.split("\n").map(x => x.trim() ? x.trim().replace(/\.$/, "") + "." : x).join("\n") };
+    shown: v => v.split("\n").map(x => x.trim() ? x.trim().replace(/\.$/, "") : x).join("\n") };
   const id = (p.hash || "").replace(/^#/, ""), sec = d => d.sections.find(x => x.id === id);
   if (!id) return null;
   if (/\.phead h2$|^\.feat__title$/.test(s)) return { where: "Section “" + id + "” → heading",
     get: d => sec(d) ? sec(d).heading || "" : undefined, put: (d, v) => { if (sec(d)) sec(d).heading = v.trim(); },
-    shown: v => titleCase(v) + "." };
+    shown: v => titleCase(v) };
   if (/\.phead \.lede$/.test(s)) return { where: "Section “" + id + "” → lede",
     get: d => sec(d) ? sec(d).lede || "" : undefined, put: (d, v) => { if (sec(d)) sec(d).lede = v.trim(); } };
   return null;

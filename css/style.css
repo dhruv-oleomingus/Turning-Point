@@ -1049,7 +1049,6 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
   letter-spacing: 0; text-transform: none; border: 0; padding: 0; gap: .35em; background: none;
   color: var(--accent);   /* back buttons are blue */
 }
-.phead .back::after { content: "."; margin-left: -.35em; }
 .phead .back:hover, .phead .back:focus-visible { background: none; color: var(--ink); }
 .box-text h3, .box-links h3 {
   font-family: var(--display); font-style: italic; font-weight: 700; font-size: 1.3em; line-height: 1.15;
@@ -1255,7 +1254,6 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
     font-size: calc(.3 * var(--u)); line-height: 1; color: var(--accent);
     transition: color calc(.15s / var(--speed)) var(--ease);
   }
-  .feat__back::after { content: "."; }
   .feat__back:hover, .feat__back:focus-visible { color: var(--ink); }
   .feat__text {                                /* columns 9½–13½, from under "Back." to the bottom */
     position: absolute; z-index: 2; top: calc(1.5 * var(--u)); bottom: 0;   /* scrolls out of sight just under "Back." */
