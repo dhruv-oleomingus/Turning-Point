@@ -64,6 +64,7 @@
       <span class="key" style="--c:#6a4fa3"><i></i>Bass</span>
       <span class="key ring"><i></i>Outline · silent</span>
     </span>
+    <button type="button" id="postcard" title="Download your plate as a postcard (PDF)">Postcard</button>
     <button type="button" id="clear">Clear</button>
   </nav>
   <div class="bands" id="bands" aria-hidden="true"></div>
@@ -385,6 +386,7 @@
       const f = placeFrame(); fw = f.w; fh = f.h; cellPx = rd.cell = cell0 * fw / fw0; mapDirty = true; rd.resize(); placeBands();
     });
     // one rectangle per square, through its block: grain (zoom), drawn about the block's middle, steel or outline
+    const RENDER = { fill: 0, rim: 0, crisp: true };   // clean cuts: no darkened rim, no soft edge
     function rects() {
       const out = [], sw = fw / COLS, sh = fh / ROWS;
       // the picture at the frame's size, whichever grain a block is drawn at; each block cut from its own part of it
@@ -397,6 +399,71 @@
       }
       return out;
     }
+
+    /* ---------- postcard ----------
+       A two-page PDF, 6 × 4 inches: the front is the plate as it is now, drawn afresh at 300 dpi and set on
+       white across the card; the back is the template (assets/img/perforation/postcard-back.jpg — any JPEG
+       of a 3:2 card can replace it). The PDF is written here, no library: each page one JPEG. */
+    const CARD_PT = [6 * 72, 4 * 72], CARD_PX = [1800, 1200], BACK = "../../assets/img/perforation/postcard-back.jpg";
+    function jpegSize(b) {   // width and height from a JPEG's frame header
+      for (let i = 2; i + 9 < b.length;) {
+        if (b[i] !== 0xFF) { i++; continue; }
+        const m = b[i + 1], len = (b[i + 2] << 8) | b[i + 3];
+        if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) return [(b[i + 7] << 8) | b[i + 8], (b[i + 5] << 8) | b[i + 6]];
+        i += 2 + len;
+      }
+      return null;
+    }
+    const toJpeg = cv => new Promise(r => cv.toBlob(b => b.arrayBuffer().then(a => r(new Uint8Array(a))), "image/jpeg", 0.93));
+    async function frontJpeg() {
+      const s = Math.min(CARD_PX[0] / fw, CARD_PX[1] / fh);   // the plate, as large as fits the card
+      const w = Math.round(fw * s), h = Math.round(fh * s);
+      canvas.width = w; canvas.height = h; rd.dpr = s;
+      rd.render(rects(), RENDER);
+      const out = document.createElement("canvas"); out.width = CARD_PX[0]; out.height = CARD_PX[1];
+      const g = out.getContext("2d");
+      g.fillStyle = "#fff"; g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(canvas, (out.width - w) / 2, (out.height - h) / 2);   // read straight after drawing, before the page shows it
+      rd.resize();
+      return { bytes: await toJpeg(out), w: out.width, h: out.height };
+    }
+    function pdf(pages, [pw, ph]) {
+      const enc = new TextEncoder(), parts = [], offs = [];
+      let len = 0;
+      const put = x => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); len += b.length; };
+      const obj = (n, body) => { offs[n] = len; put(`${n} 0 obj\n`); body(); put("\nendobj\n"); };
+      put("%PDF-1.4\n"); put(new Uint8Array([37, 226, 227, 207, 211, 10]));
+      obj(1, () => put("<< /Type /Catalog /Pages 2 0 R >>"));
+      obj(2, () => put(`<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 3} 0 R`).join(" ")}] /Count ${pages.length} >>`));
+      pages.forEach((im, i) => {
+        const n = 3 + i * 3, draw = `q ${pw} 0 0 ${ph} 0 0 cm /Im${i} Do Q`;
+        obj(n, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im${i} ${n + 2} 0 R >> >> /Contents ${n + 1} 0 R >>`));
+        obj(n + 1, () => { put(`<< /Length ${draw.length} >>\nstream\n${draw}\nendstream`); });
+        obj(n + 2, () => {
+          put(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`);
+          put(im.bytes); put("\nendstream");
+        });
+      });
+      const xref = len, count = 3 + pages.length * 3;
+      put(`xref\n0 ${count}\n0000000000 65535 f \n` + offs.slice(1).map(o => String(o).padStart(10, "0") + " 00000 n \n").join(""));
+      put(`trailer\n<< /Size ${count} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+      return new Blob(parts, { type: "application/pdf" });
+    }
+    const cardBtn = $("postcard");
+    cardBtn.addEventListener("click", async () => {
+      if (cardBtn.disabled) return;
+      cardBtn.disabled = true; cardBtn.textContent = "Making…";
+      try {
+        const front = await frontJpeg();
+        const bb = new Uint8Array(await (await fetch(BACK)).arrayBuffer()), size = jpegSize(bb);
+        const pages = [front]; if (size) pages.push({ bytes: bb, w: size[0], h: size[1] });
+        const url = URL.createObjectURL(pdf(pages, CARD_PT)), a = document.createElement("a");
+        a.href = url; a.download = "turning-point-postcard.pdf"; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      } catch (e) { console.warn("Postcard failed:", e); }
+      cardBtn.disabled = false; cardBtn.textContent = "Postcard";
+    });
+
     let last = performance.now();
     function tick(now) {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -406,7 +473,7 @@
           if (now - lastScan > 250) { lastScan = now; scan(); }   // the shapes as they are now (they keep moving)
           sweep(dt);
         }
-        rd.render(rects(), { fill: 0, rim: 0, crisp: true });   // clean cuts: no darkened rim, no soft edge
+        rd.render(rects(), RENDER);
         drawOver();
         $("tempo").textContent = playing ? tempoTxt : "";
       }
