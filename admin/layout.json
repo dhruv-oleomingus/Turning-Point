@@ -1,7 +1,7 @@
 {
   "app": "turning-point-layout",
   "version": 2,
-  "savedAt": 1795563108525,
+  "savedAt": 1795586550178,
   "viewport": {
     "w": 1920,
     "h": 1080
@@ -285,7 +285,7 @@
           "color": "accent",
           "align": "right",
           "cols": 1,
-          "text": "Back.",
+          "text": "Back",
           "sel": ".phead .back",
           "parent": "ebfnl",
           "id": "ee3pf"
@@ -312,9 +312,9 @@
           "type": "strip",
           "label": "Pattern strip",
           "x": 14,
-          "y": 2,
+          "y": 0.25,
           "w": 1,
-          "h": 6,
+          "h": 7.75,
           "sel": ".sliver",
           "variant": "outline",
           "id": "egv93",
@@ -397,7 +397,7 @@
           "color": "accent",
           "align": "right",
           "cols": 1,
-          "text": "Back.",
+          "text": "Back",
           "sel": ".phead .back",
           "parent": "ez90l",
           "id": "e1222z"
@@ -406,9 +406,9 @@
           "type": "strip",
           "label": "Pattern strip",
           "x": 14,
-          "y": 2,
+          "y": 0.25,
           "w": 1,
-          "h": 6,
+          "h": 7.75,
           "sel": ".sliver",
           "variant": "outline",
           "id": "e1475y",
@@ -424,24 +424,9 @@
         },
         {
           "type": "box",
-          "label": "1 · image — Visualisation of the structure.",
-          "x": 0.5,
-          "y": 1.5,
-          "w": 10.5,
-          "h": 5.973,
-          "item": "krz8z4q",
-          "kind": "image",
-          "cap": true,
-          "parent": "ez90l",
-          "id": "ezdk8",
-          "ratio": 1.7578125,
-          "ratioText": "1800/1024"
-        },
-        {
-          "type": "box",
           "label": "2 · text — Four columns in dynamic balance",
           "x": 0.5,
-          "y": 8,
+          "y": 8.5,
           "w": 4.5,
           "h": 7,
           "item": "kpi76jz",
@@ -454,7 +439,7 @@
           "type": "box",
           "label": "3 · carousel — 3 images",
           "x": 5.25,
-          "y": 8,
+          "y": 8.5,
           "w": 8.75,
           "h": 6.188,
           "item": "ku4vko6",
@@ -523,7 +508,7 @@
         },
         {
           "type": "box",
-          "label": "8 · carousel — 9 images",
+          "label": "8 · carousel — 8 images",
           "x": 0.5,
           "y": 36,
           "w": 12.5,
@@ -548,6 +533,21 @@
           "cap": false,
           "parent": "ez90l",
           "id": "e17ms9"
+        },
+        {
+          "type": "box",
+          "label": "1 · carousel — 2 images",
+          "x": 0.5,
+          "y": 1.5,
+          "w": 11,
+          "h": 6.257,
+          "item": "khzarhv",
+          "kind": "carousel",
+          "cap": true,
+          "parent": "ez90l",
+          "id": "ezx5k",
+          "ratio": 1.758,
+          "ratioText": "1800/1024"
         }
       ],
       "stash": {
@@ -729,7 +729,7 @@
           "color": "accent",
           "align": "right",
           "cols": 1,
-          "text": "Back.",
+          "text": "Back",
           "sel": ".panel.is-cards .phead .back",
           "parent": "eooxq",
           "id": "erurl"

@@ -88,13 +88,22 @@ window.SITE = {
       "lede": "How the structure was designed, created and assembled.",
       "items": [
         {
-          "type": "image",
+          "type": "carousel",
           "span": 4,
           "ratio": "1800/1024",
-          "src": "assets/img/process/render-01 copy.png",
-          "alt": "Visualisation of the four spiralling cor-ten columns on site",
-          "caption": "Visualisation of the structure.",
-          "key": "krz8z4q"
+          "slides": [
+            {
+              "src": "assets/img/process/render-01 copy.png",
+              "alt": "Visualisation of the four spiralling cor-ten columns on site",
+              "caption": "Visualisation of the structure."
+            },
+            {
+              "src": "assets/uploads/fab-building1-2.jpg",
+              "alt": "The four spiralling cor-ten columns in the workshop",
+              "caption": "Fabrication of the structure."
+            }
+          ],
+          "key": "khzarhv"
         },
         {
           "type": "text",
@@ -192,11 +201,6 @@ window.SITE = {
               "src": "assets/img/process/fab-layers.jpg",
               "alt": "Close-up of several stacked perforated layers",
               "caption": "Patterns across successive layers."
-            },
-            {
-              "src": "assets/img/process/fab-workshop-02.jpg",
-              "alt": "Two people inspecting stacked perforated layers in a workshop",
-              "caption": "Checking the stack in the workshop."
             },
             {
               "src": "assets/img/process/fab-corner.jpg",
