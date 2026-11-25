@@ -81,11 +81,12 @@ const texURL = key => TEX_SET === 'png'
 const EYE = 1.65;                                         /* standing eye height = horizon = flip axis */
 const FLIP_DUR = 3.0, ROLL_DUR = 1.2;
 const STAG_APART = 0.34, STAG_GATHER = 0.22;              /* seconds between successive arms */
-const SPIN_SPEED = 0.14;                                  /* rad/s while inverted */
+const SPIN_SPEED = 0;                                     /* rad/s while inverted (0: it holds still as it comes apart; it was 0.14) */
+const LIT = false;                                        /* false: no lights or shadows — every surface shows its texture evenly */
 const PL = 48.8;                                          /* ground slab: 4 × the 40 ft plinth */
 const HAZE = '#dcd2c4';
 const LOOK_MAX = 80 * D2R;
-const CLOSER = 0.6;                                       /* camera distance × this: 0.6 = 40% closer than the framing that shows it all */                                /* how far you tilt up to meet the upturned ground */
+const CLOSER = 0.69;                                      /* camera distance × this: 0.69 ≈ 31% closer than the framing that shows it all */                                /* how far you tilt up to meet the upturned ground */
 
 /* passages read on the underside of the upturned ground — one is drawn at random each time */
 const PASSAGES = [
@@ -105,7 +106,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, coarse ? 2 : 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = LIT;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 stage.appendChild(renderer.domElement);
 
@@ -118,8 +119,10 @@ world.position.set(0, EYE, 0);
 content.position.set(0, -EYE, 0);
 world.add(content); content.add(structure); scene.add(world);
 
-const plinth = new THREE.Mesh(new THREE.BoxGeometry(PL, 0.06, PL), new THREE.MeshStandardMaterial({color: '#d8c9b3', roughness: 0.95}));
-plinth.position.y = -0.03; plinth.receiveShadow = true;
+const plinth = new THREE.Mesh(new THREE.BoxGeometry(PL, 0.06, PL), LIT
+  ? new THREE.MeshStandardMaterial({color: '#d8c9b3', roughness: 0.95})
+  : new THREE.MeshBasicMaterial({color: '#d8c9b3', toneMapped: false}));
+plinth.position.y = -0.03; plinth.receiveShadow = LIT;
 content.add(plinth);
 
 /* lights turn over with the image too */
@@ -127,7 +130,7 @@ const hemi = new THREE.HemisphereLight('#e2e8ea', '#9f805d', 1.25);
 hemi.position.set(0, 1000, 0);
 const sun = new THREE.DirectionalLight('#ffdfbb', 2.9);
 sun.position.set(-9, 8.5, 5); sun.target.position.set(0, 1, 0);
-sun.castShadow = true;
+sun.castShadow = LIT;
 sun.shadow.mapSize.setScalar(coarse ? 1024 : 2048);
 Object.assign(sun.shadow.camera, {left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 45});
 sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.025;
@@ -244,18 +247,20 @@ function slotPose(a) {
   return slotP.copy(a.lc).applyQuaternion(slotQ).add(slotO);
 }
 
-/* where a released arm comes to drift: in the open air below, beside and beneath the hanging columns */
+/* Turned over, the structure comes apart downward: each arm drops straight down the screen, by an amount
+   that grows with how far it hangs below the (now overhead) ground — so the gaps between the arms keep
+   widening, as if the structure were slowly diffusing below — then floats there, bobbing gently. */
+const STRETCH = 0.8;      /* an arm drops this × its distance below the ground (0.8: the hanging columns spread to 1.8× their length) */
+const FALL_SPEED = 0.5;   /* metres a second, roughly: a slow, even drop */
+const vG = new THREE.Vector3();
 function planFloat(a) {
   const cw = vA.copy(a.c0).applyMatrix4(content.matrixWorld);
-  const phi = Math.atan2(cw.z, cw.x) + rnd(-0.8, 0.8);
-  const r = Math.min(7, Math.max(Math.hypot(cw.x, cw.z) + rnd(0.6, 2.6), 3.6));
-  const yW = rnd(-3.5, 0.8);
-  a.anchor = new THREE.Vector3(Math.cos(phi) * r, yW, Math.sin(phi) * r).applyMatrix4(invContent);
-  const tilt = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize();
-  a.qA = new THREE.Quaternion().setFromAxisAngle(gL, rnd(-1.2, 1.2)).multiply(a.q0).multiply(qTmp.setFromAxisAngle(tilt, rnd(0.2, 0.9)));
-  a.orbW = rnd(0.018, 0.04);
-  a.bobA = rnd(0.12, 0.35); a.bobW = rnd(0.25, 0.55); a.bobP = rnd(0, 2 * PI);
-  a.tAx = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(); a.tW = rnd(0.03, 0.11) * (Math.random() < 0.5 ? -1 : 1);
+  const ground = vG.set(0, 0, 0).applyMatrix4(content.matrixWorld).y;
+  a.drop = Math.max(0, ground - cw.y) * STRETCH + rnd(0.05, 0.25);
+  a.anchor = a.c0.clone().addScaledVector(gL, a.drop);
+  a.qA = a.q0.clone();
+  a.bobA = rnd(0.04, 0.12); a.bobW = rnd(0.25, 0.5); a.bobP = rnd(0, 2 * PI);
+  a.tAx = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(); a.tA = rnd(0.015, 0.05); a.tW = rnd(0.2, 0.45);
 }
 
 function begin(a, type, now) {
@@ -266,11 +271,7 @@ function begin(a, type, now) {
     gL.set(0, -1, 0).applyQuaternion(qTmp.copy(world.quaternion).invert());
     planFloat(a);
     a.seq = ++seq;
-    a.ax = new THREE.Vector3(1, 0, 0).applyQuaternion(a.q0);
-    a.ax.addScaledVector(gL, -a.ax.dot(gL));
-    if (a.ax.lengthSq() < 1e-4) a.ax.set(a.c0.x, 0, a.c0.z);
-    a.ax.normalize();
-    a.dur = 2.6 + 0.22 * a.c0.distanceTo(a.anchor);
+    a.dur = Math.max(1.2, a.drop / FALL_SPEED);
     a.mode = 'fall';
   } else {
     a.dur = 2.8;
@@ -278,11 +279,10 @@ function begin(a, type, now) {
   }
 }
 
-function floatPose(a, now) {
-  const tau = now - a.fT, ang = a.orbW * tau;
-  cNow.copy(a.anchor).applyAxisAngle(Y, ang)
-    .addScaledVector(a.fG, -a.bobA * (Math.sin(a.bobW * tau + a.bobP) - Math.sin(a.bobP)));
-  qNow.setFromAxisAngle(Y, ang).multiply(qTmp2.setFromAxisAngle(a.tAx, a.tW * tau)).multiply(a.qA);
+function floatPose(a, now) {   /* bobbing up and down where it came to rest, tilting a little — no circling */
+  const tau = now - a.fT;
+  cNow.copy(a.anchor).addScaledVector(a.fG, a.bobA * (Math.sin(a.bobW * tau + a.bobP) - Math.sin(a.bobP)));
+  qNow.setFromAxisAngle(a.tAx, a.tA * Math.sin(a.tW * tau)).multiply(a.qA);
 }
 
 function updateArm(a, now) {
@@ -292,12 +292,9 @@ function updateArm(a, now) {
   } else if (a.mode === 'float') {
     floatPose(a, now); place(a, cNow, qNow);
   } else if (a.mode === 'fall') {
-    const t = Math.min(1, (now - a.t0) / a.dur), s = ease(t);
-    vB.copy(a.ax).multiplyScalar(0.9).add(a.c0);
-    vC.copy(a.anchor).addScaledVector(gL, -1.2);
-    bez(cNow, a.c0, vB, vC, a.anchor, s);
-    qNow.copy(a.q0).slerp(a.qA, smooth(0.1, 1, t));
-    place(a, cNow, qNow);
+    const t = Math.min(1, (now - a.t0) / a.dur), s = 1 - (1 - t) * (1 - t);   // straight down, easing to rest
+    cNow.copy(a.c0).lerp(a.anchor, s);
+    place(a, cNow, a.q0);
     if (t >= 1) { a.mode = 'float'; a.fT = now; a.fG = gL.clone(); }
   } else if (a.mode === 'rise') {
     const t = Math.min(1, (now - a.t0) / a.dur), s = ease(t);
@@ -356,8 +353,10 @@ const onModel = gltf => {
     const slot = new THREE.Object3D();
     slot.position.copy(mesh.position); slot.quaternion.copy(mesh.quaternion); slot.scale.copy(mesh.scale);
     mesh.parent.add(slot); mesh.parent.remove(mesh); content.add(mesh);
-    mesh.material = new THREE.MeshStandardMaterial({color: '#83492a', roughness: 0.84, metalness: 0.1, side: THREE.DoubleSide});
-    mesh.castShadow = mesh.receiveShadow = true;
+    mesh.material = LIT
+      ? new THREE.MeshStandardMaterial({color: '#83492a', roughness: 0.84, metalness: 0.1, side: THREE.DoubleSide})
+      : new THREE.MeshBasicMaterial({color: '#83492a', side: THREE.DoubleSide, toneMapped: false});   // unlit: the texture's own colours
+    mesh.castShadow = mesh.receiveShadow = LIT;
     arms.push({mesh, slot, key: f.key, lc, mode: 'home', pend: null, seq: 0});
   }
   scene.updateMatrixWorld(true);
