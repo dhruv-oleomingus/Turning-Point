@@ -70,12 +70,21 @@ const D2R = Math.PI / 180, PI = Math.PI;
 const coarse = matchMedia('(pointer:coarse)').matches;
 const framed = !coarse;                                   /* desktop: 4:3 frame */
 const TEX = (coarse || Math.min(innerWidth, innerHeight) < 600) ? 512 : 1024;
-/* which textures the boxes wear: "png" — the test set in assets/tex/1024 png/ (col-1Box-01.png …, one size for all
-   screens); "webp" — the cor-ten set (assets/tex/512|1024/P1_Box-01.webp …). Try the other with ?tex=webp / ?tex=png */
-const TEX_SET = new URLSearchParams(location.search).get('tex') || 'png';
-const texURL = key => TEX_SET === 'png'
-  ? `assets/tex/1024%20png/${key.replace(/^P(\d)_Box-/, 'col-$1Box-')}.png`
-  : `assets/tex/${TEX}/${key}.webp`;
+/* which textures the boxes wear:
+   "atlas" — one picture per column, assets/tex/atlas/col-1.png … col-4.png: every arm of the column in a row, top arm
+             first, each side laid out as one continuous panel (Side A, Side B, pivot ends, tip ends, tops), so a whole
+             side of a column is painted at once. col-<n>-guide.png outlines the faces, as a layer to paint over. Paint
+             in place and keep the size; tools/make_atlas.py rebuilds the atlases from the separate textures below.
+   "png"   — the separate textures in assets/tex/1024 png/ (col-1Box-01.png …), one an arm;
+   "webp"  — the cor-ten set (assets/tex/512|1024/P1_Box-01.webp …).
+   Try another with ?tex=png / ?tex=webp */
+const TEX_SET = new URLSearchParams(location.search).get('tex') || 'atlas';
+const texURL = (key, set = TEX_SET) => set === 'webp'
+  ? `assets/tex/${TEX}/${key}.webp`
+  : `assets/tex/1024%20png/${key.replace(/^P(\d)_Box-/, 'col-$1Box-')}.png`;
+const ATLAS = TEX_SET === 'atlas'
+  ? fetch('assets/tex/atlas/atlas.json').then(r => r.ok ? r.json() : null).catch(() => null)
+  : Promise.resolve(null);
 
 /* tune freely */
 const EYE = 1.65;                                         /* standing eye height = horizon = flip axis */
@@ -317,14 +326,39 @@ const reveal = () => stage.classList.add('ready');
 setTimeout(() => { if (ready) reveal(); }, 6000);
 const tl = new THREE.TextureLoader();
 const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+/* an arm's UVs moved to its row of the column's atlas. Each face as seen from outside, upright: s across (0 left),
+   t down (0 top) — the same rules as tools/make_atlas.py. Local axes: x along the arm (pivot → tip), y up, z depth. */
+function atlasUV(mesh, rects) {
+  const g = mesh.geometry = mesh.geometry.clone();
+  g.computeBoundingBox();
+  const {min, max} = g.boundingBox, P = g.attributes.position, N = g.attributes.normal, uv = g.attributes.uv;
+  for (let i = 0; i < P.count; i++) {
+    const n = [N.getX(i), N.getY(i), N.getZ(i)], ax = n.map(Math.abs).reduce((b, v, k, a) => v > a[b] ? k : b, 0), sg = n[ax] > 0;
+    const sx = (P.getX(i) - min.x) / (max.x - min.x), sy = (max.y - P.getY(i)) / (max.y - min.y), sz = (P.getZ(i) - min.z) / (max.z - min.z);
+    const [f, s, t] = ax === 2 ? (sg ? ['A', sx, sy] : ['B', 1 - sx, sy])
+                    : ax === 0 ? (sg ? ['E', 1 - sz, sy] : ['P', sz, sy])
+                    : ['T', sx, sz];
+    const r = rects[f];
+    uv.setXY(i, r[0] + s * (r[2] - r[0]), r[1] + t * (r[3] - r[1]));
+  }
+  uv.needsUpdate = true;
+}
+const colTex = {};
 function loadTex(a) {
   const done = () => { if (++texDone >= arms.length) reveal(); };
-  tl.load(texURL(a.key), t => {
+  const wear = t => {
     t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso;
     const m = a.mesh.material;
     m.map = t; m.color.set('#ffffff'); m.alphaTest = 0.5; m.alphaToCoverage = true; m.needsUpdate = true;
     done();
-  }, undefined, done);
+  };
+  ATLAS.then(A => {
+    const rects = A && A.arms[a.key];
+    if (!rects) { tl.load(texURL(a.key, TEX_SET === 'atlas' ? 'png' : TEX_SET), wear, undefined, done); return; }   // no atlas: the separate textures
+    atlasUV(a.mesh, rects);
+    colTex[rects.col] ||= new Promise(res => tl.load(`assets/tex/atlas/${A.columns[rects.col].file}`, res, undefined, () => res(null)));
+    colTex[rects.col].then(t => t ? wear(t) : done());
+  });
 }
 
 const onModel = gltf => {

@@ -1,0 +1,11 @@
+# The atlases are repainted in place: check them on every visit (a quick "not modified" when unchanged),
+# rather than the long cache the site gives images, so a new painting shows straight away.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(png|json)$">
+    Header set Cache-Control "no-cache"
+    Header unset Expires
+  </FilesMatch>
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresByType image/png "access plus 0 seconds"
+</IfModule>
