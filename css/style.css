@@ -973,7 +973,6 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
     font-size: calc(.42 * var(--u)); line-height: 1; letter-spacing: 0; text-transform: none;
     color: var(--title-ink);
   }
-  .title a::after { content: "."; }
   .nav {                                       /* first baseline on the line under row 5 */
     position: absolute; left: 0; top: calc(6 * var(--u) - .86em); margin: 0;
     font-size: calc(.42 * var(--u));
@@ -989,7 +988,6 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
     font-family: var(--display); font-style: italic; font-weight: 700;
     font-size: 1em; line-height: 1; letter-spacing: 0; text-transform: none; color: var(--ink);
   }
-  .nav__item::after { content: "."; }
   .nav__item .roll { line-height: 1; }
   .nav__num { display: none; }
 
@@ -1044,7 +1042,6 @@ figcaption .fig { font-family: var(--serif); font-style: italic; font-size: 1.25
 .panel { font-family: var(--text); color: var(--ink); }
 .phead { border-bottom: 0; }
 .phead h2 { font-family: var(--display); font-weight: 700; font-style: normal; letter-spacing: 0; text-transform: none; line-height: 1; }
-.phead h2::after { content: "."; }
 .phead h2 .num { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 1em; color: var(--accent); margin-right: .22em; }
 .phead .lede { color: var(--ink); font-size: 1em; }
 .phead .back {
@@ -1181,7 +1178,6 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
   .biennale { grid-area: org; justify-self: end; align-self: start; margin: 0; padding: 0 var(--m) calc(var(--m) * 1.4); width: calc(128px + 2 * var(--m)); line-height: 0; }
   .is-panel .biennale { display: none; }
   .title { font-size: clamp(24px, 7vw, 30px); letter-spacing: 0; text-transform: none; color: var(--title-ink); }
-  .title a::after { content: "."; }
   .meta { font-family: var(--text); text-transform: lowercase; letter-spacing: 0; font-size: 14px; }
   .intro { padding-bottom: calc(var(--m) * 1.2); }
   .stage { margin-bottom: calc(var(--m) * 1.5); }
@@ -1191,7 +1187,6 @@ figcaption .fig, .cz__cap .fig, .card .num, .event .day {
     font-family: var(--display); font-style: italic; font-weight: 700;
     font-size: clamp(17px, 4.9vw, 22px); letter-spacing: 0; text-transform: none; color: var(--ink);
   }
-  .nav__item::after { content: "."; }
   .nav__item.is-active { color: var(--accent); }
   .phead h2 { font-size: 30px; }
   .phead .back { font-size: 20px; }
