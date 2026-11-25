@@ -87,7 +87,8 @@
     const fr = placeFrame();
 
     /* ---------- the pattern: dense, and only where it has been let grow ---------- */
-    const cell0 = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720);   // css px per sim cell, at the frame's first size
+    const DENSER = 1.2;                                                     // the whole pattern this much finer than the home page's
+    const cell0 = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720) / DENSER;   // css px per sim cell, at the frame's first size
     const rd = new TurningPattern(canvas, { texture: "../../assets/img/texture.jpg", texturePx: 620, seed: 11, allowAll: false, drift: 0.00005,
                                             regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 });
     if (!rd.ok) { hint.textContent = "This piece needs WebGL2"; return; }
@@ -126,14 +127,14 @@
     }
     let mapDirty = true;
 
-    const CLUSTER_R = 34, PULL_R = 22;   // sim cells: a new cluster's disc; the band a drag opens
+    const CLUSTER_R = 34 * DENSER, PULL_R = 22 * DENSER;   // sim cells: a new cluster's disc; the band a drag opens (the same size on screen)
     let started = false;
     const allowedAt = (x, y) => { const i = Math.floor(y) * W + Math.floor(x); return x >= 0 && y >= 0 && x < W && y < H && rd.paramPx[i * 4 + 3] > 120; };
     function cluster(px, py) {   // a tap: a disc of pattern, growing from its centre
       const [x, y] = toSim(px, py);
       rd.allow(x, y, CLUSTER_R);
       rd.seed(x, y, 3.5);
-      for (let i = 0; i < 8; i++) { const a = Math.random() * 6.283, r = 5 + Math.random() * 12; rd.seed(x + Math.cos(a) * r, y + Math.sin(a) * r, 1.8); }
+      for (let i = 0; i < 8; i++) { const a = Math.random() * 6.283, r = (5 + Math.random() * 12) * DENSER; rd.seed(x + Math.cos(a) * r, y + Math.sin(a) * r, 1.8); }
       started = true; hint.classList.add("is-gone");
     }
     // pulling the pattern over a square's edge: the square joins the block it was pulled from
@@ -302,15 +303,7 @@
       if (over.width !== Math.round(w * dpr)) { over.width = Math.round(w * dpr); over.height = Math.round(h * dpr); }
       og.setTransform(dpr, 0, 0, dpr, 0, 0); og.clearRect(0, 0, w, h);
       const now = performance.now();
-      // the blocks, faintly: a hairline wherever two squares belong to different blocks
       const sw = fw / COLS, sh = fh / ROWS;
-      og.strokeStyle = "rgba(30,26,22,.09)"; og.lineWidth = 1; og.beginPath();
-      for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-        const k = owner[r * COLS + c], x = Math.round((c + 1) * sw) + .5, y = Math.round((r + 1) * sh) + .5;
-        if (c < COLS - 1 && owner[r * COLS + c + 1] !== k) { og.moveTo(x, Math.round(r * sh)); og.lineTo(x, Math.round((r + 1) * sh)); }
-        if (r < ROWS - 1 && owner[(r + 1) * COLS + c] !== k) { og.moveTo(Math.round(c * sw), y); og.lineTo(Math.round((c + 1) * sw), y); }
-      }
-      og.stroke();
       // a square just pulled into a block glows briefly
       for (let i = joins.length - 1; i >= 0; i--) {
         const t = (now - joins[i].t) / 600;
