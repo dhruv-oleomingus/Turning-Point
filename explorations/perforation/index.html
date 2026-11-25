@@ -93,8 +93,9 @@
     const DENSER = 1.5;                                                     // the whole pattern this much finer than the home page's
     const cell0 = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720) / DENSER;   // css px per sim cell, at the frame's first size
     /* the plate's surface: one of two pictures, picked at random on each visit (?tex=bamboo or ?tex=coral to
-       choose). Each file is square, the picture in its top TEX_A of the height, a mirror of its lower edge below. */
-    const TEXTURES = { bamboo: "../../assets/img/perforation/bamboo.jpg", coral: "../../assets/img/perforation/coral.jpg" }, TEX_A = 928 / 1232;
+       choose). Each block is cut from its own part of the picture. The files are square; TEX_A is how much of
+       their height is picture (1: all of it). */
+    const TEXTURES = { bamboo: "../../assets/img/perforation/bamboo.jpg", coral: "../../assets/img/perforation/coral.jpg" }, TEX_A = 1;
     const texName = (location.search.match(/[?&]tex=(bamboo|coral)\b/) || [])[1] || (Math.random() < 0.5 ? "bamboo" : "coral");
     const rd = new TurningPattern(canvas, { texture: TEXTURES[texName], texturePx: 620, seed: 11, allowAll: false, drift: 0.00005,
                                             regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 });
