@@ -28,7 +28,10 @@
      ramp:[x0,x1,a0,a1] fades opacity from a0 to a1 between x0 and x1;
      pale:0..1 lightens the texture towards white; mono:true renders it
      in black and white; rim:0..1 darkens the edge just outside each cut;
-     crisp:true gives the grown area a hard edge instead of a soft fade.
+     crisp:true gives the grown area a hard edge instead of a soft fade;
+     texture:name draws with a texture loaded by rd.loadTexture(url, name);
+     solid:true fills the whole grown area with the texture, cuts and all (a
+     layer for a second texture, drawn over it, to be cut into).
      rd.ripple(x, y, R) ripples a new pattern out from (x, y) to radius R.
      rd.seed(x, y, r, -2) erases a disc completely (also where it had grown).
      Confining growth (opts.allowAll: false): the pattern only survives where
@@ -151,6 +154,7 @@
   uniform vec4  uRamp;     // horizontal fade: from x0 to x1 (css px), opacity a0 → a1
   uniform float uPale;     // 0..1 — mix the texture towards white
   uniform int   uMono;     // 1 = black and white
+  uniform int   uSolid;    // 1 = the whole grown area in the texture, cuts and all (a layer for another to cut into)
   uniform float uRim;      // how dark the rim just outside each cut is (0 = none)
   uniform vec4  uRects[${MAX_RECTS}];  // x0,y0,x1,y1 (css px)
   uniform vec4  uOffs[${MAX_RECTS}];   // pattern offset xy (css px), texture offset zw (uv)
@@ -221,7 +225,7 @@
       col *= 1.0 - uRim * rim;
     }
 
-    float shape = uInvert == 1 ? cut : vis * (1.0 - cut);
+    float shape = uSolid == 1 ? vis : uInvert == 1 ? cut : vis * (1.0 - cut);
     if (sty.x > 1.5) {
       // clay: the plate as a soft relief (cuts are recesses), lit from the upper
       // left, with ambient occlusion gathering in the channels and along walls
@@ -332,6 +336,7 @@
       }, opts);
       this.ok = false;
       this.hasTex = false;
+      this.textures = {};
       this.seeds = [];
       this.ripples = [];
       this.steps = 0;
@@ -367,11 +372,13 @@
       this.ok = true;
     }
 
-    loadTexture(url) {
+    /** Load the texture; with a name, a further texture kept beside it, used by render({ texture: name }). */
+    loadTexture(url, name) {
       const gl = this.gl, img = new Image();
+      const slot = name ? (this.textures[name] = this.textures[name] || { t: gl.createTexture(), ok: false }) : null;
       img.onload = () => {
         try {
-          gl.bindTexture(gl.TEXTURE_2D, this.tex);
+          gl.bindTexture(gl.TEXTURE_2D, slot ? slot.t : this.tex);
           gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
           gl.generateMipmap(gl.TEXTURE_2D);
@@ -379,12 +386,12 @@
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
-          this.hasTex = true;
+          if (slot) slot.ok = true; else this.hasTex = true;
         } catch (e) {
           // Happens when the page is opened straight from disk (file://):
           // browsers refuse local images in WebGL. Run a local server instead.
           console.warn("Texture could not be used (open the site through a web server):", e);
-          this.hasTex = false;
+          if (!slot) this.hasTex = false;
         }
         this.onTexture && this.onTexture();
       };
@@ -641,7 +648,8 @@
       gl.bindTexture(gl.TEXTURE_2D, this.a.t);
       gl.uniform1i(P.u.uState, 0);
       gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, this.tex);
+      const slot = o.texture ? this.textures[o.texture] : null;
+      gl.bindTexture(gl.TEXTURE_2D, slot ? slot.t : this.tex);
       gl.uniform1i(P.u.uTex, 1);
       gl.uniform2i(P.u.uSize, this.W, this.H);
       gl.uniform2f(P.u.uRes, this.canvas.width, this.canvas.height);
@@ -651,7 +659,8 @@
       gl.uniform1f(P.u.uFill, o.fill || 0);
       gl.uniform1f(P.u.uCrisp, o.crisp ? 1 : 0);
       gl.uniform1f(P.u.uThresh, this.opts.threshold);
-      gl.uniform1i(P.u.uHasTex, this.hasTex ? 1 : 0);
+      gl.uniform1i(P.u.uHasTex, (slot ? slot.ok : this.hasTex) ? 1 : 0);
+      gl.uniform1i(P.u.uSolid, o.solid ? 1 : 0);
       gl.uniform3fv(P.u.uTint, o.tint || [0, 0, 0]);
       gl.uniform1i(P.u.uTintOn, o.tint ? 1 : 0);
       gl.uniform1i(P.u.uInvert, o.invert ? 1 : 0);

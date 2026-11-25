@@ -42,7 +42,7 @@
 
   <aside class="xinfo" id="info">
     <p>The columns of Turning Point are cut with patterns grown by a reaction–diffusion process — two simulated substances, one feeding and one consuming the other, settling into tendrils, labyrinths and spots.</p>
-    <p>The plate is cut into squares, as the columns are, and the squares are grouped into blocks — single squares, pairs, bars, corners. Each block holds the pattern at its own grain, dense, medium or open, cut through the plate or drawn only as an outline. Some are turned inside out: the tendrils carry the picture, with white around them.</p>
+    <p>The plate is cut into squares, as the columns are, and the squares are grouped into blocks — single squares, pairs, bars, corners. Each block holds the pattern at its own grain, dense, medium or open, cut from two pictures, each shuffled into a patchwork, one cut through to show the other — or drawn only as an outline. Some blocks swap the pictures over.</p>
     <p>Tap to start a pattern; drag from it to stretch it — it grows where you pull it. Pull it across the edge of a square and that square takes on the pattern you brought: it joins the block you came from, with its grain and its cut.</p>
     <p>Press play: a line crosses the plate from left to right. Every cut shape it passes through — a tendril, a cell — sounds once, in the voice of the rows it sits in. The rows play in pairs, from the top: pluck, keys, bass, and round again — marked beside the plate — each shape higher the higher it sits within its pair. Outlined squares stay silent. The more shapes still ahead, the slower it goes. The pattern can be grown, and pulled about, while it plays.</p>
   </aside>
@@ -69,7 +69,7 @@
   </nav>
   <div class="bands" id="bands" aria-hidden="true"></div>
 
-  <script src="../../js/rd.js?v=20261125e"></script>
+  <script src="../../js/rd.js?v=20261125f"></script>
   <script src="../../js/tiles.js?v=20261125d"></script>
   <script>
   (function () {
@@ -93,11 +93,13 @@
     /* ---------- the pattern: dense, and only where it has been let grow ---------- */
     const DENSER = 1.5;                                                     // the whole pattern this much finer than the home page's
     const cell0 = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720) / DENSER;   // css px per sim cell, at the frame's first size
-    /* the plate's surface: one of two pictures, picked at random on each visit (?tex=bamboo or ?tex=coral to
-       choose), shuffled into a patchwork (below). The files are square; TEX_A is how much of
-       their height is picture (1: all of it). */
+    /* the plate's surfaces: two pictures, each shuffled into a patchwork (below), cutting into each other — in a
+       picture block one is the plate and the other shows through its cuts; turned blocks swap them. Which is the
+       plate in the unturned blocks is picked at random on each visit (?tex=bamboo or ?tex=coral to choose). The
+       files are square; TEX_A is how much of their height is picture (1: all of it). */
     const TEXTURES = { bamboo: "../../assets/img/perforation/bamboo.jpg", coral: "../../assets/img/perforation/coral.jpg" }, TEX_A = 1;
-    const texName = (location.search.match(/[?&]tex=(bamboo|coral)\b/) || [])[1] || (Math.random() < 0.5 ? "bamboo" : "coral");
+    const PLATE = (location.search.match(/[?&]tex=(bamboo|coral)\b/) || [])[1] || (Math.random() < 0.5 ? "bamboo" : "coral");
+    const CUT = PLATE === "bamboo" ? "coral" : "bamboo";
     const rd = new TurningPattern(canvas, { texturePx: 620, seed: 11, allowAll: false, drift: 0.00005,
                                             regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 });
     if (!rd.ok) { hint.textContent = "This piece needs WebGL2"; return; }
@@ -122,7 +124,7 @@
     if (BANDS.length > 1 && BANDS[BANDS.length - 1][1] - BANDS[BANDS.length - 1][0] < 2) BANDS[BANDS.length - 2][1] = BANDS.pop()[1];
     const bandOf = r => Math.max(0, BANDS.findIndex(([a, b]) => r >= a && r < b));
     const DENS_W = [0.5, 0.4, 0.1];                   // how often each grain is dealt
-    const INVERT = 0.5;                               // the share of picture blocks turned inside out: the tendrils carry the picture, white around them
+    const INVERT = 0.5;                               // the share of picture blocks with the two pictures swapped over
     const blocks = [], owner = new Int32Array(ROWS * COLS);   // owner: the block each square belongs to
     {
       const plan = TP_TILES.plan({ rows: ROWS, cols: COLS, key: "perforation", blocks: "mixed", draw: "mix", outlines: 0.3,
@@ -360,6 +362,7 @@
        quarters), each from a random part of the picture, a little larger or smaller, sometimes mirrored or upside
        down — laid so each patch sits exactly on its square. A new shuffle on every visit. */
     const MOSAIC_PX = 2048, SPLIT = 0.4, PATCH_SCALE = [0.7, 1.4];
+    function mosaic(name) {
     const pic = new Image();
     pic.onload = () => {
       const T = Math.max(fw, fh / TEX_A), k = MOSAIC_PX / T;              // mosaic px per css px of the frame
@@ -380,19 +383,26 @@
         if (Math.random() < SPLIT) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) patch(x + i * tw / 2, y + j * th / 2, tw / 2, th / 2);
         else patch(x, y, tw, th);
       }
-      cv.toBlob(b => rd.loadTexture(URL.createObjectURL(b)), "image/jpeg", 0.92);
+      cv.toBlob(b => rd.loadTexture(URL.createObjectURL(b), name), "image/jpeg", 0.92);
     };
-    pic.src = TEXTURES[texName];
+    pic.src = TEXTURES[name];
+    }
+    mosaic("bamboo"); mosaic("coral");
     addEventListener("resize", () => {
       const f = placeFrame(); fw = f.w; fh = f.h; cellPx = rd.cell = cell0 * fw / fw0; mapDirty = true; rd.resize(); placeBands();
     });
     // one rectangle per square, through its block: grain (zoom), drawn about the block's middle, steel or outline
     const RENDER = { fill: 0, rim: 0, crisp: true };   // clean cuts: no darkened rim, no soft edge
     // the plate in two passes: the blocks cut through the picture, then the inverted ones (the cut shapes drawn in it)
+    // picture blocks: the picture that shows through the cuts fills the grown area, then the plate's picture is laid
+    // over it with the cuts left open (so the edges meet with no white between). Outline blocks: ink on white.
     function drawPlate() {
-      const r = rects();
-      rd.render(r.filter(q => !q.inv), RENDER);
-      rd.render(r.filter(q => q.inv), Object.assign({}, RENDER, { invert: true, clear: false }));
+      const r = rects(), o = x => Object.assign({}, RENDER, { clear: false }, x);
+      const ink = r.filter(q => q.style === 1), up = r.filter(q => q.style !== 1 && !q.inv), turned = r.filter(q => q.style !== 1 && q.inv);
+      rd.render([], RENDER);                                                       // clear
+      rd.render(ink, o({}));
+      rd.render(up, o({ texture: CUT, solid: true }));     rd.render(up, o({ texture: PLATE }));
+      rd.render(turned, o({ texture: PLATE, solid: true })); rd.render(turned, o({ texture: CUT }));
     }
     function rects() {
       const out = [], sw = fw / COLS, sh = fh / ROWS;
