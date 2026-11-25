@@ -30,6 +30,11 @@
      in black and white; rim:0..1 darkens the edge just outside each cut.
      rd.ripple(x, y, R) ripples a new pattern out from (x, y) to radius R.
      rd.seed(x, y, r, -2) erases a disc completely (also where it had grown).
+     Confining growth (opts.allowAll: false): the pattern only survives where
+     it is allowed — rd.allow(x, y, r) opens a soft disc, rd.disallowAll()
+     closes everything again. opts.drift (rad per step) slowly turns the
+     direction field so a settled pattern keeps moving. rd.readState(x, y, w, h)
+     reads the grid back (RGBA floats: A, B, grown, –).
      Two instances may share one canvas (they share its WebGL context).
    ===================================================================== */
 (function () {
@@ -53,6 +58,7 @@
   uniform vec4 uRegime; // coral F,K  mitosis F,K
   uniform vec4 uRip[4];  // ripples: centre xy (cells), front radius, band width
   uniform int uRipN;
+  uniform float uDrift;  // turns the direction field (and sways the regime mix) so the pattern keeps moving
   out vec4 o;
 
   float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -69,10 +75,13 @@
 
     vec4 prm = texelFetch(uParams, p, 0);
     float m  = prm.r;
-    float th = prm.g * 6.2831853;
+    float th = prm.g * 6.2831853 + uDrift;
     float an = prm.b;
+    if (uDrift != 0.0) m = clamp(m + 0.12 * sin(uDrift * 0.7 + prm.g * 12.566), 0.0, 1.0);
     float F = mix(uRegime.x, uRegime.z, m);
     float K = mix(uRegime.y, uRegime.w, m);
+    float allow = prm.a;               // 1 where the pattern may live; below it dies back (opts.allowAll)
+    K += (1.0 - allow) * 0.09;
 
     float lapA = l.r + r.r + d.r + u.r - 4.0 * c.r;
 
@@ -116,7 +125,7 @@
       }
     }
 
-    float vis = wipe ? 0.0 : max(c.b, smoothstep(0.015, 0.09, B));
+    float vis = wipe ? 0.0 : max(c.b * step(0.02, allow), smoothstep(0.015, 0.09, B));
     o = vec4(clamp(A, 0.0, 1.0), clamp(B, 0.0, 1.0), vis, 1.0);
   }`;
 
@@ -314,13 +323,16 @@
         seed: 7,
         dotBias: 0,           // −1 … +1 : more lines … more dots
         anisotropy: 0.5,
-        regime: [0.0545, 0.062, 0.0367, 0.0649]
+        regime: [0.0545, 0.062, 0.0367, 0.0649],
+        allowAll: true,       // false: the pattern lives only where rd.allow() opened the grid
+        drift: 0              // rad per step the direction field turns (0: still)
       }, opts);
       this.ok = false;
       this.hasTex = false;
       this.seeds = [];
       this.ripples = [];
       this.steps = 0;
+      this.driftPhase = 0;
       this.dpr = 1;
       const gl = canvas.getContext("webgl2", { premultipliedAlpha: true, antialias: false, alpha: true });
       if (!gl) return;
@@ -414,11 +426,12 @@
       const nTh  = periodicNoise(W, H, 90, s * 17 + 2);
       const nAn  = periodicNoise(W, H, 70, s * 19 + 4);
       const bias = this.opts.dotBias, aniso = this.opts.anisotropy;
-      const px = new Uint8Array(W * H * 4);
+      const px = new Uint8Array(W * H * 4), old = this.paramPx && this.paramPx.length === px.length ? this.paramPx : null;
       for (let i = 0; i < W * H; i++) {
         const m = Math.min(1, Math.max(0, (nMix[i] - 0.45 + bias * 0.55) * 3.0));
         const an = Math.min(1, Math.max(0, (nAn[i] - 0.4) * 2.0)) * aniso;
-        px[i * 4] = m * 255; px[i * 4 + 1] = nTh[i] * 255; px[i * 4 + 2] = an * 255; px[i * 4 + 3] = 255;
+        px[i * 4] = m * 255; px[i * 4 + 1] = nTh[i] * 255; px[i * 4 + 2] = an * 255;
+        px[i * 4 + 3] = old ? old[i * 4 + 3] : (this.opts.allowAll ? 255 : 0);   // the allowed area is kept
       }
       this.paramPx = px;
       this.ripples = [];
@@ -469,6 +482,48 @@
       if (this.ripples.length > 4) this.ripples.shift();
     }
 
+    /** Let the pattern live in a soft disc (cell units); v 0…1. Only matters with opts.allowAll false. */
+    allow(x, y, r, v = 1) {
+      if (!this.ok || !this.paramPx) return;
+      const W = this.W, H = this.H, px = this.paramPx;
+      const x0 = Math.max(0, Math.floor(x - r)), x1 = Math.min(W - 1, Math.ceil(x + r));
+      const y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(H - 1, Math.ceil(y + r));
+      if (x1 < x0 || y1 < y0) return;
+      for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
+        const d = Math.hypot(i + 0.5 - x, j + 0.5 - y) / r;
+        if (d >= 1) continue;
+        const k = d < 0.6 ? 1 : 1 - (d - 0.6) / 0.4, q = (j * W + i) * 4 + 3;
+        px[q] = Math.max(px[q], Math.round(255 * v * k));
+      }
+      // upload just the rows touched
+      const gl = this.gl;
+      gl.bindTexture(gl.TEXTURE_2D, this.params);
+      gl.pixelStorei(gl.UNPACK_ROW_LENGTH, W);
+      gl.pixelStorei(gl.UNPACK_SKIP_PIXELS, x0);
+      gl.pixelStorei(gl.UNPACK_SKIP_ROWS, y0);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, x0, y0, x1 - x0 + 1, y1 - y0 + 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0);
+      gl.pixelStorei(gl.UNPACK_SKIP_PIXELS, 0);
+      gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
+    }
+
+    /** Close the whole grid again (opts.allowAll false): the pattern dies back. */
+    disallowAll() {
+      if (!this.paramPx) return;
+      for (let i = 3; i < this.paramPx.length; i += 4) this.paramPx[i] = 0;
+      this._uploadParams();
+    }
+
+    /** Read the grid back: RGBA floats per cell (A, B, grown, –), rows from the top. */
+    readState(x = 0, y = 0, w = this.W, h = this.H, out) {
+      if (!this.ok || !this.a) return null;
+      const gl = this.gl, buf = out && out.length >= w * h * 4 ? out : new Float32Array(w * h * 4);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.a.fb);
+      gl.readPixels(x, y, w, h, gl.RGBA, gl.FLOAT, buf);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return buf;
+    }
+
     /** Clear the grid back to empty. */
     clear() {
       const gl = this.gl;
@@ -497,6 +552,8 @@
       gl.disable(gl.SCISSOR_TEST);
       gl.uniform2i(P.u.uSize, this.W, this.H);
       gl.uniform4fv(P.u.uRegime, this.opts.regime);
+      this.driftPhase += (this.opts.drift || 0) * n;
+      gl.uniform1f(P.u.uDrift, this.driftPhase);
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, this.params);
       gl.uniform1i(P.u.uParams, 1);
