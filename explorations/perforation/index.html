@@ -68,7 +68,7 @@
   </nav>
   <div class="bands" id="bands" aria-hidden="true"></div>
 
-  <script src="../../js/rd.js?v=20261125d"></script>
+  <script src="../../js/rd.js?v=20261125e"></script>
   <script src="../../js/tiles.js?v=20261125d"></script>
   <script>
   (function () {
@@ -380,7 +380,7 @@
           if (now - lastScan > 250) { lastScan = now; scan(); }   // the shapes as they are now (they keep moving)
           sweep(dt);
         }
-        rd.render(rects(), { fill: 0 });
+        rd.render(rects(), { fill: 0, rim: 0, crisp: true });   // clean cuts: no darkened rim, no soft edge
         drawOver();
         $("tempo").textContent = playing ? tempoTxt : "";
       }

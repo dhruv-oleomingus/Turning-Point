@@ -27,7 +27,8 @@
      flat colour; invert:true draws the cut shapes; vignette:[x,y,r];
      ramp:[x0,x1,a0,a1] fades opacity from a0 to a1 between x0 and x1;
      pale:0..1 lightens the texture towards white; mono:true renders it
-     in black and white; rim:0..1 darkens the edge just outside each cut.
+     in black and white; rim:0..1 darkens the edge just outside each cut;
+     crisp:true gives the grown area a hard edge instead of a soft fade.
      rd.ripple(x, y, R) ripples a new pattern out from (x, y) to radius R.
      rd.seed(x, y, r, -2) erases a disc completely (also where it had grown).
      Confining growth (opts.allowAll: false): the pattern only survives where
@@ -140,6 +141,7 @@
   uniform float uCell;     // css px per sim cell
   uniform float uTexPx;    // css px per texture tile
   uniform float uFill;     // 0..1 — reveal texture everywhere
+  uniform float uCrisp;    // 1 = a hard edge where the grown pattern meets the bare ground (no soft fade)
   uniform float uThresh;   // cut threshold on B
   uniform int   uHasTex;
   uniform vec3  uTint;     // flat colour instead of the texture
@@ -194,6 +196,7 @@
     vec4 st = samp(sc);
     float B = st.g;
     float vis = clamp(max(st.b, uFill), 0.0, 1.0);
+    if (uCrisp > 0.5) { float wv = max(fwidth(vis) * 0.5, 0.01); vis = smoothstep(0.5 - wv, 0.5 + wv, vis); }
 
     float w = max(fwidth(B) * 0.75, 0.006);
     float cut = smoothstep(uThresh - w, uThresh + w, B);
@@ -646,6 +649,7 @@
       gl.uniform1f(P.u.uCell, this.cell);
       gl.uniform1f(P.u.uTexPx, this.opts.texturePx);
       gl.uniform1f(P.u.uFill, o.fill || 0);
+      gl.uniform1f(P.u.uCrisp, o.crisp ? 1 : 0);
       gl.uniform1f(P.u.uThresh, this.opts.threshold);
       gl.uniform1i(P.u.uHasTex, this.hasTex ? 1 : 0);
       gl.uniform3fv(P.u.uTint, o.tint || [0, 0, 0]);
