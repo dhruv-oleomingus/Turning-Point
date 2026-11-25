@@ -22,8 +22,9 @@
     .perf .xtools .grp { display: inline-flex; gap: 1.2em; align-items: baseline; }
     .perf .xtools #play { color: #fff; min-width: 4.5em; }
     .perf .xtools #tempo { color: #6f675f; min-width: 5em; font-variant-numeric: tabular-nums; }
-    .perf .xtools .key { display: inline-flex; align-items: baseline; gap: .45em; color: #6f675f; }
+    .perf .xtools .key { display: inline-flex; align-items: baseline; gap: .45em; color: #6f675f; white-space: nowrap; }
     .perf .xtools .key i { width: .75em; height: .75em; border-radius: 50%; background: var(--c); display: inline-block; transform: translateY(.06em); }
+    .perf .xtools .key.ring i { background: none; box-shadow: inset 0 0 0 1px #8a8178; }
     .pframe { position: fixed; background: #fff; overflow: hidden; }
     .pframe canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     #field { touch-action: none; cursor: crosshair; }
@@ -39,8 +40,9 @@
 
   <aside class="xinfo" id="info">
     <p>The columns of Turning Point are cut with patterns grown by a reaction–diffusion process — two simulated substances, one feeding and one consuming the other, settling into tendrils, labyrinths and spots.</p>
-    <p>Tap to start a pattern; drag from it to stretch it — it grows where you pull it. Tap elsewhere for another, and drag between them to join them.</p>
-    <p>Press play: a line crosses the plate from left to right. Every cut shape it passes through — a tendril, a cell — sounds once, in its own voice: the small ones pluck, the middling ones play keys, the large ones bass, higher the higher they sit. The more shapes still ahead, the slower it goes. The pattern can be grown while it plays.</p>
+    <p>The plate is cut into squares, as the columns are, and the squares are grouped into blocks — single squares, pairs, bars, corners. Each block holds the pattern at its own grain, dense, medium or open, cut through the steel or drawn only as an outline.</p>
+    <p>Tap to start a pattern; drag from it to stretch it — it grows where you pull it. Pull it across the edge of a square and that square takes on the pattern you brought: it joins the block you came from, with its grain and its cut.</p>
+    <p>Press play: a line crosses the plate from left to right. Every cut shape it passes through — a tendril, a cell — sounds once, in the voice of its block's grain: dense squares pluck, medium ones play keys, open ones bass, higher the higher they sit. Outlined squares stay silent. The more shapes still ahead, the slower it goes. The pattern can be grown, and pulled about, while it plays.</p>
   </aside>
 
   <div class="pframe" id="frame">
@@ -54,15 +56,17 @@
       <button type="button" id="play" aria-pressed="false">Play</button>
       <span id="tempo" aria-live="off"></span>
     </span>
-    <span class="grp" aria-label="Voices: small shapes pluck, middling ones keys, large ones bass">
-      <span class="key" style="--c:#e4572e"><i></i>Pluck</span>
-      <span class="key" style="--c:#3fa7c9"><i></i>Keys</span>
-      <span class="key" style="--c:#6a4fa3"><i></i>Bass</span>
+    <span class="grp" aria-label="Voices: dense squares pluck, medium ones keys, open ones bass; outlined squares are silent">
+      <span class="key" style="--c:#e4572e"><i></i>Dense · pluck</span>
+      <span class="key" style="--c:#3fa7c9"><i></i>Medium · keys</span>
+      <span class="key" style="--c:#6a4fa3"><i></i>Open · bass</span>
+      <span class="key ring"><i></i>Outline · silent</span>
     </span>
     <button type="button" id="clear">Clear</button>
   </nav>
 
   <script src="../../js/rd.js?v=20261125d"></script>
+  <script src="../../js/tiles.js?v=20261125d"></script>
   <script>
   (function () {
     "use strict";
@@ -83,41 +87,82 @@
     const fr = placeFrame();
 
     /* ---------- the pattern: dense, and only where it has been let grow ---------- */
-    const cell = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720);   // css px per cell
+    const cell0 = Math.max(mobile ? 1.6 : 1.8, fr.w / 720, fr.h / 720);   // css px per sim cell, at the frame's first size
     const rd = new TurningPattern(canvas, { texture: "../../assets/img/texture.jpg", texturePx: 620, seed: 11, allowAll: false, drift: 0.00005,
                                             regime: [0.0545, 0.062, 0.0367, 0.0649], dotBias: 0, anisotropy: 0.5 });
     if (!rd.ok) { hint.textContent = "This piece needs WebGL2"; return; }
-    rd.start(Math.ceil(fr.w / cell), Math.ceil(fr.h / cell), cell);
+    rd.start(Math.ceil(fr.w / cell0), Math.ceil(fr.h / cell0), cell0);
     rd.resize();
-    const W = rd.W, H = rd.H, TH = rd.opts.threshold;
+    const W = rd.W, H = rd.H, TH = rd.opts.threshold, fw0 = fr.w;
+    let fw = fr.w, fh = fr.h, cellPx = cell0;   // the frame now, and css px per sim cell now
 
-    const CLUSTER_R = 34, PULL_R = 22;   // cells: a new cluster's disc; the band a drag opens
+    /* ---------- the squares ----------
+       As on the home page: the plate is a grid of squares (seven rows on a desktop, four squares across on a
+       phone), grouped into blocks by js/tiles.js — single squares, 2 × 2, bars and corners. Each block holds
+       the pattern at its own grain and is drawn as steel or as an ink outline. A block shows its own part of
+       the one pattern, drawn larger about its middle (z < 1: more open), so what grows in a block stays in it. */
+    const ROWS = mobile ? Math.max(3, Math.round(fr.h / (fr.w / 4))) : 7;
+    const COLS = mobile ? 4 : Math.max(1, Math.round(fr.w / (fr.h / ROWS)));
+    const Z = [1, 0.68, 0.46];                        // grain: dense, medium, open
+    const VOICE = ["pluck", "keys", "bass"];          // …and the voice each plays in
+    const DENS_W = [0.4, 0.3, 0.3];                   // how often each grain is dealt
+    const blocks = [], owner = new Int32Array(ROWS * COLS);   // owner: the block each square belongs to
+    {
+      const plan = TP_TILES.plan({ rows: ROWS, cols: COLS, key: "perforation", blocks: "mixed", draw: "mix", outlines: 0.3,
+                                   empty: 0, holes: "scatter", scale: "1", seed: "visit" });
+      for (const pb of plan) {
+        let c0 = 1e9, c1 = -1, r0 = 1e9, r1 = -1;
+        for (const q of pb.parts) { c0 = Math.min(c0, q.c); c1 = Math.max(c1, q.c + q.cw); r0 = Math.min(r0, q.r); r1 = Math.max(r1, q.r + q.rh); }
+        const x = Math.random(), dens = x < DENS_W[0] ? 0 : x < DENS_W[0] + DENS_W[1] ? 1 : 2;
+        const id = blocks.push({ style: pb.style, dens, ax: (c0 + c1) / 2 / COLS, ay: (r0 + r1) / 2 / ROWS }) - 1;   // its middle, as a share of the frame
+        for (const q of pb.parts) for (let j = 0; j < q.rh; j++) for (let i = 0; i < q.cw; i++) owner[(q.r + j) * COLS + q.c + i] = id;
+      }
+    }
+    const squareAt = (x, y) => Math.min(ROWS - 1, Math.max(0, Math.floor(y / fh * ROWS))) * COLS + Math.min(COLS - 1, Math.max(0, Math.floor(x / fw * COLS)));
+    // a point on the plate (css px) → where it is in the pattern (sim cells), through its square's block
+    function toSim(x, y) {
+      const b = blocks[owner[squareAt(x, y)]], z = Z[b.dens], ax = b.ax * fw, ay = b.ay * fh;
+      return [(ax + (x - ax) * z) / cellPx, (ay + (y - ay) * z) / cellPx];
+    }
+    let mapDirty = true;
+
+    const CLUSTER_R = 34, PULL_R = 22;   // sim cells: a new cluster's disc; the band a drag opens
     let started = false;
     const allowedAt = (x, y) => { const i = Math.floor(y) * W + Math.floor(x); return x >= 0 && y >= 0 && x < W && y < H && rd.paramPx[i * 4 + 3] > 120; };
-    function cluster(x, y) {   // a tap: a disc of pattern, growing from its centre
+    function cluster(px, py) {   // a tap: a disc of pattern, growing from its centre
+      const [x, y] = toSim(px, py);
       rd.allow(x, y, CLUSTER_R);
       rd.seed(x, y, 3.5);
       for (let i = 0; i < 8; i++) { const a = Math.random() * 6.283, r = 5 + Math.random() * 12; rd.seed(x + Math.cos(a) * r, y + Math.sin(a) * r, 1.8); }
       started = true; hint.classList.add("is-gone");
     }
+    // pulling the pattern over a square's edge: the square joins the block it was pulled from
+    const joins = [];
+    function join(sq, from) {
+      if (owner[sq] === from) return;
+      owner[sq] = from; mapDirty = true;
+      joins.push({ sq, t: performance.now() });
+    }
     let drag = null;
-    const cellAt = e => { const b = canvas.getBoundingClientRect(); return [(e.clientX - b.left) / cell, (e.clientY - b.top) / cell]; };
+    const local = e => { const b = canvas.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
     canvas.addEventListener("pointerdown", e => {
       canvas.setPointerCapture(e.pointerId);
-      const [x, y] = cellAt(e);
-      drag = { x0: e.clientX, y0: e.clientY, last: [x, y], moved: false, sinceSeed: 0, inside: allowedAt(x, y) };
+      const [x, y] = local(e), [sx, sy] = toSim(x, y);
+      drag = { x0: e.clientX, y0: e.clientY, last: [x, y], moved: false, sinceSeed: 0, sq: squareAt(x, y), inside: allowedAt(sx, sy) };
     });
     canvas.addEventListener("pointermove", e => {
       if (!drag) return;
       if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
-      const [x, y] = cellAt(e), [lx, ly] = drag.last;
+      const [x, y] = local(e), [lx, ly] = drag.last;
       if (!drag.moved) { drag.moved = true; if (!drag.inside) cluster(lx, ly); }
       // pulling: open a band along the path; the pattern grows on into it (a few seeds help it along)
-      const d = Math.hypot(x - lx, y - ly), n = Math.max(1, Math.ceil(d / 3));
+      const d = Math.hypot(x - lx, y - ly), n = Math.max(1, Math.ceil(d / 4));
       for (let i = 1; i <= n; i++) {
-        const px = lx + (x - lx) * i / n, py = ly + (y - ly) * i / n;
-        rd.allow(px, py, PULL_R);
-        if ((drag.sinceSeed += d / n) > 12) { rd.seed(px, py, 2); drag.sinceSeed = 0; }
+        const px = lx + (x - lx) * i / n, py = ly + (y - ly) * i / n, sq = squareAt(px, py);
+        if (sq !== drag.sq) { join(sq, owner[drag.sq]); drag.sq = sq; }
+        const [sx, sy] = toSim(px, py);
+        rd.allow(sx, sy, PULL_R);
+        if ((drag.sinceSeed += d / n) > 20) { rd.seed(sx, sy, 2); drag.sinceSeed = 0; }
       }
       drag.last = [x, y];
     });
@@ -133,34 +178,48 @@
     });
 
     /* ---------- the shapes ----------
-       Several times a second while playing, the grid is read back and every cut shape — each enclosure, a
-       tendril or a cell: a connected run of cut cells — is found and given a voice by its size (the smallest
-       third pluck, the middle keys, the largest bass). Then, column by column, the shapes the line would be
-       entering there: present in this column but not the one before. Entering and leaving a shape is one note. */
+       Several times a second while playing, the plate is read as it is drawn: one point per sim cell of the
+       frame, looked up through its square's block. Outlined blocks are left out. Every cut shape — a tendril
+       or a cell: a connected run of cut points within one block (dense blocks, which show the pattern as it
+       is, run on into each other) — sounds in its block's voice. Then, column by column, the shapes the line
+       would be entering there: present in this column but not the one before. Entering and leaving is one note. */
     const VOICE_RGB = { pluck: [228, 87, 46], keys: [63, 167, 201], bass: [106, 79, 163] };
     let grid = null, label = null, kinds = null, enters = null, ahead = null, lastScan = 0;
+    const vSim = new Int32Array(W * H), vKey = new Int32Array(W * H);   // per point: the sim cell it shows (−1: outline), its block (−2: dense)
+    function buildMap() {
+      for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+        const x = (i + 0.5) * cellPx, y = (j + 0.5) * cellPx, v = j * W + i;
+        if (x >= fw || y >= fh) { vSim[v] = -1; continue; }
+        const id = owner[squareAt(x, y)], b = blocks[id];
+        if (b.style === 1) { vSim[v] = -1; continue; }
+        const [sx, sy] = toSim(x, y);
+        vSim[v] = (((Math.floor(sy) % H) + H) % H) * W + (((Math.floor(sx) % W) + W) % W);
+        vKey[v] = b.dens === 0 ? -2 : id;
+      }
+      mapDirty = false;
+    }
     function scan() {
+      if (mapDirty) buildMap();
       grid = rd.readState(0, 0, W, H, grid);
       label = label && label.length === W * H ? label.fill(0) : new Int32Array(W * H);
-      const sizes = [0], stack = new Int32Array(W * H);
+      const cut = v => vSim[v] >= 0 && grid[vSim[v] * 4 + 1] > TH;
+      const sizes = [0], voice = [null], stack = new Int32Array(W * H);
       let n = 0;
       for (let i0 = 0; i0 < W * H; i0++) {
-        if (label[i0] || grid[i0 * 4 + 1] <= TH) continue;
-        n++; let sp = 0, cnt = 0; stack[sp++] = i0; label[i0] = n;
+        if (label[i0] || !cut(i0)) continue;
+        n++; let sp = 0, cnt = 0; const key = vKey[i0]; stack[sp++] = i0; label[i0] = n;
         while (sp) {
           const i = stack[--sp], x = i % W; cnt++;
-          if (x > 0 && !label[i - 1] && grid[(i - 1) * 4 + 1] > TH) { label[i - 1] = n; stack[sp++] = i - 1; }
-          if (x < W - 1 && !label[i + 1] && grid[(i + 1) * 4 + 1] > TH) { label[i + 1] = n; stack[sp++] = i + 1; }
-          if (i >= W && !label[i - W] && grid[(i - W) * 4 + 1] > TH) { label[i - W] = n; stack[sp++] = i - W; }
-          if (i < W * (H - 1) && !label[i + W] && grid[(i + W) * 4 + 1] > TH) { label[i + W] = n; stack[sp++] = i + W; }
+          if (x > 0 && !label[i - 1] && vKey[i - 1] === key && cut(i - 1)) { label[i - 1] = n; stack[sp++] = i - 1; }
+          if (x < W - 1 && !label[i + 1] && vKey[i + 1] === key && cut(i + 1)) { label[i + 1] = n; stack[sp++] = i + 1; }
+          if (i >= W && !label[i - W] && vKey[i - W] === key && cut(i - W)) { label[i - W] = n; stack[sp++] = i - W; }
+          if (i < W * (H - 1) && !label[i + W] && vKey[i + W] === key && cut(i + W)) { label[i + W] = n; stack[sp++] = i + W; }
         }
         sizes[n] = cnt;
+        voice[n] = VOICE[blocks[owner[squareAt((i0 % W + 0.5) * cellPx, (Math.floor(i0 / W) + 0.5) * cellPx)]].dens];
       }
-      // voices by size: thirds of the shapes, smallest to largest (specks under 4 cells stay silent)
-      const sorted = sizes.slice(1).filter(v => v >= 4).sort((a, b) => a - b);
-      const q1 = sorted[Math.floor(sorted.length / 3)] || 0, q2 = sorted[Math.floor(sorted.length * 2 / 3)] || 0;
       kinds = new Array(n + 1);
-      for (let k = 1; k <= n; k++) kinds[k] = sizes[k] < 4 ? null : sizes[k] <= q1 ? "pluck" : sizes[k] <= q2 ? "keys" : "bass";
+      for (let k = 1; k <= n; k++) kinds[k] = sizes[k] < 4 ? null : voice[k];   // specks under 4 points stay silent
       // where the line enters each shape (with the shape's middle height in that column)
       enters = new Array(W); ahead = new Float32Array(W + 1);
       let prev = new Set();
@@ -242,8 +301,25 @@
       const dpr = Math.min(devicePixelRatio || 1, 2), w = over.clientWidth, h = over.clientHeight;
       if (over.width !== Math.round(w * dpr)) { over.width = Math.round(w * dpr); over.height = Math.round(h * dpr); }
       og.setTransform(dpr, 0, 0, dpr, 0, 0); og.clearRect(0, 0, w, h);
-      if (!playing) { flashes.length = 0; return; }
       const now = performance.now();
+      // the blocks, faintly: a hairline wherever two squares belong to different blocks
+      const sw = fw / COLS, sh = fh / ROWS;
+      og.strokeStyle = "rgba(30,26,22,.09)"; og.lineWidth = 1; og.beginPath();
+      for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+        const k = owner[r * COLS + c], x = Math.round((c + 1) * sw) + .5, y = Math.round((r + 1) * sh) + .5;
+        if (c < COLS - 1 && owner[r * COLS + c + 1] !== k) { og.moveTo(x, Math.round(r * sh)); og.lineTo(x, Math.round((r + 1) * sh)); }
+        if (r < ROWS - 1 && owner[(r + 1) * COLS + c] !== k) { og.moveTo(Math.round(c * sw), y); og.lineTo(Math.round((c + 1) * sw), y); }
+      }
+      og.stroke();
+      // a square just pulled into a block glows briefly
+      for (let i = joins.length - 1; i >= 0; i--) {
+        const t = (now - joins[i].t) / 600;
+        if (t >= 1) { joins.splice(i, 1); continue; }
+        const r = Math.floor(joins[i].sq / COLS), c = joins[i].sq % COLS;
+        og.fillStyle = `rgba(68,154,212,${.16 * (1 - t)})`;
+        og.fillRect(Math.round(c * sw), Math.round(r * sh), Math.round((c + 1) * sw) - Math.round(c * sw), Math.round((r + 1) * sh) - Math.round(r * sh));
+      }
+      if (!playing) { flashes.length = 0; return; }
       for (let i = flashes.length - 1; i >= 0; i--) if (now - flashes[i].t > 700) flashes.splice(i, 1);
       if (flashes.length && label) {
         const on = new Map();   // shape → [rgb, strength]; the shape found by the cell it sounded at (labels change between reads)
@@ -252,13 +328,25 @@
         if (on.size) {
           for (let i = 0; i < W * H; i++) { const q = on.get(label[i]); if (q) { d[i * 4] = q[0][0]; d[i * 4 + 1] = q[0][1]; d[i * 4 + 2] = q[0][2]; d[i * 4 + 3] = 230 * q[1]; } }
           fg.putImageData(fillImg, 0, 0);
-          og.imageSmoothingEnabled = true; og.drawImage(fillCv, 0, 0, W * cell, H * cell);
+          og.imageSmoothingEnabled = false; og.drawImage(fillCv, 0, 0, W * cellPx, H * cellPx);
         }
       }
-      const x = px * cell; og.strokeStyle = "#449ad4"; og.lineWidth = 1.5; og.beginPath(); og.moveTo(x, 0); og.lineTo(x, h); og.stroke();
+      const x = px * cellPx; og.strokeStyle = "#449ad4"; og.lineWidth = 1.5; og.beginPath(); og.moveTo(x, 0); og.lineTo(x, h); og.stroke();
     }
 
-    addEventListener("resize", () => { placeFrame(); rd.resize(); });
+    addEventListener("resize", () => {
+      const f = placeFrame(); fw = f.w; fh = f.h; cellPx = rd.cell = cell0 * fw / fw0; mapDirty = true; rd.resize();
+    });
+    // one rectangle per square, through its block: grain (zoom), drawn about the block's middle, steel or outline
+    function rects() {
+      const out = [], sw = fw / COLS, sh = fh / ROWS;
+      for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+        const b = blocks[owner[r * COLS + c]], z = Z[b.dens], x0 = Math.round(c * sw), y0 = Math.round(r * sh);
+        out.push({ x: x0, y: y0, w: Math.round((c + 1) * sw) - x0, h: Math.round((r + 1) * sh) - y0,
+                   ox: b.ax * fw * (1 - z) / z, oy: b.ay * fh * (1 - z) / z, style: b.style, zoom: z });
+      }
+      return out;
+    }
     let last = performance.now();
     function tick(now) {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -268,7 +356,7 @@
           if (now - lastScan > 250) { lastScan = now; scan(); }   // the shapes as they are now (they keep moving)
           sweep(dt);
         }
-        rd.render([{ x: 0, y: 0, w: canvas.clientWidth, h: canvas.clientHeight }], { fill: 0 });
+        rd.render(rects(), { fill: 0 });
         drawOver();
         $("tempo").textContent = playing ? tempoTxt : "";
       }
