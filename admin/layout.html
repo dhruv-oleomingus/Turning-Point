@@ -194,6 +194,27 @@
   .status.ok { color: #3f7a47; border-color: rgba(63,122,71,.35); }
   .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 7px 14px; border-radius: 4px; font-size: 12.5px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 100; }
   .toast.on { opacity: 1; }
+
+  /* ---------- Postcard: the back of the explorations' postcards ---------- */
+  .wrap.pcwrap { grid-template-columns: 300px minmax(0, 1fr) 300px; }
+  .wrap[hidden] { display: none; }
+  .pcstage { position: relative; overflow: hidden; background: #d8d4cf; display: grid; place-items: center; }
+  .pccard { position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.18); }
+  .pccard canvas { display: block; width: 100%; height: 100%; }
+  .pcboxes { position: absolute; inset: 0; }
+  .pcbox { position: absolute; outline: 1px dashed rgba(10,124,255,.35); cursor: move; }
+  .pcbox:hover { outline: 1px solid rgba(10,124,255,.7); }
+  .pcbox.sel { outline: 2px solid var(--sel); }
+  .pcbox.hid { outline-color: rgba(208,48,43,.5); }
+  .pcbox .lb { position: absolute; left: 0; top: -17px; font-size: 10px; letter-spacing: .04em; color: var(--sel); white-space: nowrap; pointer-events: none; opacity: 0; }
+  .pcbox:hover .lb, .pcbox.sel .lb { opacity: 1; }
+  .pcbox .rz { position: absolute; right: -6px; bottom: -6px; width: 11px; height: 11px; background: #fff; border: 2px solid var(--sel); border-radius: 2px; cursor: nwse-resize; display: none; }
+  .pcbox.sel .rz { display: block; }
+  .pcinfo { position: absolute; left: 12px; bottom: 10px; font-size: 11px; color: var(--grey); }
+  .pcq { border: 1px solid var(--line); border-radius: 4px; padding: 6px; margin: 6px 0; }
+  .pcq textarea { width: 100%; min-height: 70px; }
+  .pcq .row { grid-template-columns: 1fr auto; }
+  .pcq .n { font-size: 10.5px; color: var(--soft); letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -201,6 +222,7 @@
 <header class="top">
   <span class="brand"><b>Turning Point.</b> Layout console</span>
   <nav class="tabs" id="tabs"></nav>
+  <button class="tab" id="pcBtn" title="The back of the explorations' postcards">Postcard</button>
   <button class="btn small" id="pageAdd" title="Duplicate this page as a new one">+ Page</button>
   <span class="sp"></span>
   <select id="vpPreset" title="Viewport to preview">
@@ -222,7 +244,7 @@
   <button class="btn small" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button>
   <span class="status" id="status"></span>
   <button class="btn" id="exportBtn">Export</button>
-  <button class="btn primary" id="saveBtn" title="Write css/layout.css and admin/layout.json into the site folder">Save to site</button>
+  <button class="btn primary" id="saveBtn" title="Write css/layout.css, js/postcard.js and admin/layout.json into the site folder">Save to site</button>
   <a class="btn" href="index.html" title="The content editor">Editor ↗</a>
 </header>
 
@@ -380,6 +402,78 @@
   </aside>
 </div>
 
+<!-- ======================= Postcard: the back of the explorations' postcards ======================= -->
+<div class="wrap pcwrap" id="pcwrap" hidden>
+  <aside class="panel l">
+    <h4>Parts of the back</h4>
+    <ul class="list" id="pcList"></ul>
+    <div class="btns">
+      <select id="pcAddType" style="width:auto">
+        <option value="text">+ Text</option><option value="quote">+ Quote</option><option value="lines">+ Writing lines</option>
+        <option value="rule">+ Line</option><option value="image">+ Picture</option>
+      </select>
+      <button class="btn small" id="pcAdd">Add</button>
+      <button class="btn small" id="pcReset" title="Put the back as the template has it">Reset</button>
+    </div>
+    <div class="row"><label for="pcPaper">Card colour</label><input type="text" id="pcPaper" placeholder="#fcfbf9"></div>
+
+    <h4>Quotes <button class="ic" id="pcQAdd" title="Add a quote">+ add</button></h4>
+    <p class="note">Each postcard takes one of these for its Quote part.</p>
+    <div class="row" style="grid-template-columns:90px 1fr"><label for="pcPick">On each card</label><select id="pcPick"></select></div>
+    <div class="row" style="grid-template-columns:90px 1fr"><label for="pcPrev">Preview</label><select id="pcPrev"></select></div>
+    <div id="pcQuotes"></div>
+
+    <h4>How it works</h4>
+    <p class="note">The Postcard button on every exploration makes a two-page PDF, 6 × 4 in: the piece on the front, this on the back.
+      <b>Save to site</b> writes it to <code>js/postcard.js</code>. Drag a part to move it, its corner to resize; arrow keys nudge (Shift: more).
+      A Picture set to <i>the piece</i> is a stamp cut from the front.</p>
+  </aside>
+  <main class="pcstage" id="pcStage">
+    <div class="pccard" id="pcCard"><canvas id="pcCanvas"></canvas><div class="pcboxes" id="pcBoxes"></div></div>
+    <div class="pcinfo">Back of the postcard · 6 × 4 in</div>
+  </main>
+  <aside class="panel r">
+    <h4>Selected</h4>
+    <p class="note" id="pcNone">Click a part on the card.</p>
+    <div id="pcInsp" hidden>
+      <div class="row two"><input type="text" id="pcLabel" placeholder="Label" style="grid-column:1/-1"></div>
+      <div class="row two">
+        <span class="unit"><span>x</span><input type="number" id="pcX" step=".1"></span>
+        <span class="unit"><span>y</span><input type="number" id="pcY" step=".1"></span>
+        <span class="unit"><span>w</span><input type="number" id="pcW" step=".1" min=".1"></span>
+        <span class="unit"><span>h</span><input type="number" id="pcH" step=".1" min=".1"></span>
+      </div>
+      <p class="note">In % of the card's width (x, w) and height (y, h).</p>
+      <label class="chk"><input type="checkbox" id="pcHide"> Hidden</label>
+      <div class="btns">
+        <button class="btn small" id="pcFwd">↑ front</button><button class="btn small" id="pcBack">↓ back</button>
+        <button class="btn small" id="pcDup">Duplicate</button><button class="btn small" id="pcDel">Delete</button>
+      </div>
+      <div id="pcTextBox">
+        <h4>Type</h4>
+        <textarea id="pcText" placeholder="Text (a line break starts a new line)"></textarea>
+        <div class="row"><label for="pcFont">Face</label>
+          <select id="pcFont"><option value="display">Title — TP Display</option><option value="display-italic">Title — TP Display Italic</option>
+            <option value="text">Text — TP Text</option><option value="text-light">Text — TP Text Light</option><option value="text-italic">Text — TP Text Light Italic</option></select></div>
+        <div class="row"><label for="pcSize">Size</label><span class="unit"><input type="number" id="pcSize" step=".05" min=".5"><span>%h</span></span></div>
+        <div class="row"><label for="pcLh">Line height</label><input type="number" id="pcLh" step=".05" min=".7" max="3"></div>
+        <div class="row"><label for="pcAlign">Align</label><select id="pcAlign"><option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option></select></div>
+      </div>
+      <div id="pcLinesBox"><div class="row"><label for="pcN">Lines</label><input type="number" id="pcN" min="1" max="30" step="1"></div></div>
+      <div id="pcColBox"><div class="row"><label for="pcColor">Colour</label>
+        <select id="pcColor"><option value="ink">Ink</option><option value="grey">Grey</option><option value="line">Light (lines)</option><option value="accent">Blue (accent)</option><option value="white">White</option></select></div></div>
+      <div id="pcImgBox">
+        <h4>Picture</h4>
+        <div class="row" style="grid-template-columns:70px 1fr"><label for="pcSrcKind">Shows</label>
+          <select id="pcSrcKind"><option value="front">the piece (a stamp cut from the front)</option><option value="file">a picture in the site</option></select></div>
+        <div class="row" style="grid-template-columns:70px 1fr" id="pcSrcRow"><label for="pcSrc">Path</label><input type="text" id="pcSrc" placeholder="assets/img/…"></div>
+        <label class="chk"><input type="checkbox" id="pcGrey"> In black and white</label>
+        <div class="row"><label for="pcFit">Fit</label><select id="pcFit"><option value="cover">fill the box</option><option value="contain">whole picture</option></select></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
 <dialog id="dlg">
   <div class="dlg">
     <h3>Export</h3>
@@ -401,6 +495,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="../js/tiles.js"></script>
+<script src="../js/postcard.js"></script>
+<script src="../explorations/shared/postcard.js"></script>
 <script>
 (function () {
 "use strict";
@@ -518,7 +614,8 @@ function withIds(pages) {
 }
 
 const DEFAULT_TYPE = () => ({ title: "Noto Serif", text: "Roboto", apply: true });
-let S = { grid: DEFAULT_GRID(), view: DEFAULT_VIEW(), type: DEFAULT_TYPE(), pages: withIds(DEFAULT_PAGES()), page: "home", editedAt: 0, savedAt: 0 };
+let S = { grid: DEFAULT_GRID(), view: DEFAULT_VIEW(), type: DEFAULT_TYPE(), pages: withIds(DEFAULT_PAGES()), page: "home", editedAt: 0, savedAt: 0,
+          postcard: JSON.parse(JSON.stringify(window.TP_POSTCARD || window.TPPostcard.DEFAULT)) };   // the postcards' back (section 11)
 let hadLocal = false;
 try {
   const raw = localStorage.getItem(KEY);
@@ -528,13 +625,14 @@ try {
       S.grid = Object.assign(DEFAULT_GRID(), d.grid); S.view = Object.assign(DEFAULT_VIEW(), d.view);
       S.pages = withIds(d.pages); S.page = d.page && d.pages.some(p => p.id === d.page) ? d.page : d.pages[0].id;
       S.type = Object.assign(DEFAULT_TYPE(), d.type); S.editedAt = d.editedAt || 0; S.savedAt = d.savedAt || 0; hadLocal = true;
+      if (d.postcard && Array.isArray(d.postcard.els)) S.postcard = d.postcard;
     }
   }
 } catch (e) {}
 
 let selId = null;
 const hist = [], fut = [];
-const snapshot = () => JSON.stringify({ grid: S.grid, type: S.type, pages: S.pages });
+const snapshot = () => JSON.stringify({ grid: S.grid, type: S.type, pages: S.pages, postcard: S.postcard });
 let last = snapshot();
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 function commit() {
@@ -542,7 +640,7 @@ function commit() {
   if (now !== last) { hist.push(last); if (hist.length > 150) hist.shift(); fut.length = 0; last = now; S.editedAt = Date.now(); }
   save(); updUndo(); setStatus();
 }
-function restore(json) { const d = JSON.parse(json); S.grid = d.grid; S.type = d.type || S.type; S.pages = d.pages; S.editedAt = Date.now(); if (!S.pages.some(p => p.id === S.page)) S.page = S.pages[0].id; last = json; save(); }
+function restore(json) { const d = JSON.parse(json); S.grid = d.grid; S.type = d.type || S.type; S.pages = d.pages; if (d.postcard) S.postcard = d.postcard; S.editedAt = Date.now(); if (!S.pages.some(p => p.id === S.page)) S.page = S.pages[0].id; last = json; save(); }
 function undo() { if (!hist.length) return; fut.push(snapshot()); restore(hist.pop()); render(); }
 function redo() { if (!fut.length) return; hist.push(snapshot()); restore(fut.pop()); render(); }
 
@@ -896,6 +994,7 @@ function render() {
   if (selId && !byId(selId)) selId = null;
   layoutViewport(); drawGrid(); renderEls(); renderRef();
   renderTabs(); renderGridPanel(); renderList(); renderInsp(); updUndo(); applyType(); setStatus();
+  if (pcMode) { [...$("tabs").children].forEach(b => b.classList.remove("on")); renderPc(); }
 }
 
 /* =====================================================================
@@ -1132,6 +1231,7 @@ document.addEventListener("keydown", ev => {
   if (ev.code === "Space" && !typing()) { spaceDown = true; canvas.classList.add("space"); ev.preventDefault(); return; }
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z" && !typing()) { ev.preventDefault(); ev.shiftKey ? redo() : undo(); return; }
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "y" && !typing()) { ev.preventDefault(); redo(); return; }
+  if (pcMode) { pcKey(ev); return; }
   if (typing() || $("dlg").open) return;
   const e = sel();
   if (ev.key.toLowerCase() === "g" && !ev.ctrlKey && !ev.metaKey) { S.view.grid = !S.view.grid; save(); render(); return; }
@@ -1361,7 +1461,7 @@ ${uLine}
   return out.join("\n");
 }
 function jsonText() {
-  return JSON.stringify({ app: "turning-point-layout", version: 2, savedAt: S.savedAt || Date.now(), viewport: { w: S.view.w, h: S.view.h }, grid: S.grid, type: S.type, pages: S.pages }, null, 2);
+  return JSON.stringify({ app: "turning-point-layout", version: 2, savedAt: S.savedAt || Date.now(), viewport: { w: S.view.w, h: S.view.h }, grid: S.grid, type: S.type, pages: S.pages, postcard: S.postcard }, null, 2);
 }
 
 /* =====================================================================
@@ -1601,8 +1701,8 @@ async function saveToSite() {
   if (!window.showDirectoryPicker) {
     S.savedAt = prev;
     if (SITE) { const d = JSON.parse(JSON.stringify(SITE)), was = JSON.stringify(d); applyText(d); if (JSON.stringify(d) !== was || itemPages().length) download("content.js", contentText(d), "text/javascript"); SITE = d; }
-    download("layout.css", cssText(), "text/css"); download("layout.json", jsonText(), "application/json");
-    toast("This browser can't write to folders: put layout.css in the site's css/ folder and layout.json in admin/ (or use Chrome or Edge)");
+    download("layout.css", cssText(), "text/css"); download("layout.json", jsonText(), "application/json"); download("postcard.js", pcText(), "text/javascript");
+    toast("This browser can't write to folders: put layout.css in the site's css/ folder, postcard.js in js/ and layout.json in admin/ (or use Chrome or Edge)");
     return;
   }
   try {
@@ -1621,6 +1721,7 @@ async function saveToSite() {
     try { nText = await pushText(dir); } catch (e) { textErr = e && e.message || String(e); }
     await writeFile(dir, ["css", "layout.css"], cssText());
     await writeFile(dir, ["admin", "layout.json"], jsonText());
+    await writeFile(dir, ["js", "postcard.js"], pcText());
     if (textErr) { save(); setStatus(); render(); toast("Layout saved, but js/content.js couldn't be updated: " + textErr); return; }
     render();
     save(); setStatus();
@@ -1638,6 +1739,7 @@ document.addEventListener("keydown", ev => { if ((ev.ctrlKey || ev.metaKey) && e
 // the layout saved with the site (admin/layout.json) is loaded when it is newer than this browser's work
 function loadData(d) {
   S.grid = Object.assign(DEFAULT_GRID(), d.grid); S.type = Object.assign(DEFAULT_TYPE(), d.type); S.pages = withIds(d.pages);
+  if (d.postcard && Array.isArray(d.postcard.els)) S.postcard = d.postcard;
   if (!S.pages.some(p => p.id === S.page)) S.page = S.pages[0].id;
   if (d.viewport) { S.view.w = d.viewport.w || S.view.w; S.view.h = d.viewport.h || S.view.h; }
 }
@@ -1685,6 +1787,158 @@ $("exResetAll").addEventListener("click", () => {
 
 let toastT;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), Math.max(1800, msg.length * 55)); }
+
+/* =====================================================================
+   11. Postcard — the back of the explorations' postcards (drawn by explorations/shared/postcard.js,
+       saved to js/postcard.js). Parts sit in shares of the card: x, w of its width; y, h and type sizes of its height.
+   ===================================================================== */
+var pcMode = false; let pcSel = null, pcPrev = 0, pcDrag = null, pcToken = 0;
+const PC_HEADER = `/* =====================================================================
+   js/postcard.js — the back of the explorations' postcards: where each part sits (x, y, w, h as shares of
+   the card, sizes as shares of its height), its words and type, and the quotes one is picked from.
+   Written by the layout editor (admin/layout.html → Postcard → Save to site); read by
+   explorations/shared/postcard.js.
+   ===================================================================== */
+`;
+const pcText = () => PC_HEADER + "window.TP_POSTCARD = " + JSON.stringify(S.postcard, null, 1) + ";\n";
+const PC = () => S.postcard;
+const pcEl = id => PC().els.find(e => e.id === id);
+const pcPct = v => Math.round(v * 1000) / 10;
+const PC_NEW = {
+  text: () => ({ label: "Text", type: "text", x: .1, y: .45, w: .3, h: .06, font: "text", size: .03, lh: 1.2, color: "ink", align: "left", text: "Text" }),
+  quote: () => ({ label: "Quote", type: "quote", x: .075, y: .66, w: .36, h: .23, font: "text-italic", size: .0225, lh: 1.3, color: "ink", align: "left" }),
+  lines: () => ({ label: "Writing lines", type: "lines", x: .55, y: .4, w: .38, h: .2, n: 5, color: "line" }),
+  rule: () => ({ label: "Line", type: "rule", x: .5, y: .1, w: .002, h: .8, color: "line" }),
+  image: () => ({ label: "Picture", type: "image", x: .8, y: .1, w: .12, h: .2, src: "front", grey: true, fit: "cover" })
+};
+const pcPreviewStamp = "assets/img/postcard/template-stamp.jpg";
+
+function pcLayout() {
+  const st = $("pcStage"), aw = st.clientWidth - 64, ah = st.clientHeight - 64;
+  const w = Math.max(200, Math.min(aw, ah * 1.5)), h = w / 1.5;
+  const card = $("pcCard"); card.style.width = w + "px"; card.style.height = h + "px";
+  return { w, h };
+}
+async function pcDraw() {
+  const { w, h } = pcLayout(), cv = $("pcCanvas"), dpr = Math.min(2, devicePixelRatio || 1), tok = ++pcToken;
+  const off = document.createElement("canvas"); off.width = Math.round(w * dpr); off.height = Math.round(h * dpr);
+  const q = (PC().quotes || []).filter(x => x && x.text && x.text.trim());
+  await TPPostcard.drawBack(off.getContext("2d"), off.width, off.height, PC(), { stamp: pcPreviewStamp, quote: q[Math.min(pcPrev, q.length - 1)] || null });
+  if (tok !== pcToken) return;
+  cv.width = off.width; cv.height = off.height; cv.getContext("2d").drawImage(off, 0, 0);
+}
+function pcBoxes() {
+  const { w, h } = pcLayout();
+  $("pcBoxes").innerHTML = PC().els.map(e => `<div class="pcbox${e.id === pcSel ? " sel" : ""}${e.hidden ? " hid" : ""}" data-id="${e.id}" style="left:${e.x * w}px;top:${e.y * h}px;width:${Math.max(6, e.w * w)}px;height:${Math.max(6, e.h * h)}px"><span class="lb">${esc(e.label || e.type)}</span><i class="rz"></i></div>`).join("");
+}
+function pcList() {
+  $("pcList").innerHTML = PC().els.map(e => `<li data-id="${e.id}" class="${e.id === pcSel ? "on" : ""}" style="${e.id === pcSel ? "background:var(--bg)" : ""}">${esc(e.label || e.type)}${e.hidden ? " <span class='note' style='margin:0'>(hidden)</span>" : ""}</li>`).join("");
+}
+function pcQuotes() {
+  const qs = PC().quotes || (PC().quotes = []);
+  $("pcQuotes").innerHTML = qs.map((q, i) => `<div class="pcq" data-i="${i}"><div class="n">Quote ${i + 1}<button class="ic" data-qdel="${i}">remove</button></div>
+    <textarea data-qf="text" placeholder="The words (a line break starts a new line)">${esc(q.text)}</textarea>
+    <input type="text" data-qf="by" placeholder="— who, and where from" value="${esc(q.by || "")}" style="width:100%;margin-top:4px"></div>`).join("");
+  const pick = $("pcPick"), prev = $("pcPrev");
+  pick.innerHTML = `<option value="random">a quote at random</option>` + qs.map((_, i) => `<option value="${i}">always quote ${i + 1}</option>`).join("");
+  pick.value = String(PC().pick ?? "random");
+  prev.innerHTML = qs.map((_, i) => `<option value="${i}">quote ${i + 1}</option>`).join("");
+  pcPrev = Math.min(pcPrev, Math.max(0, qs.length - 1)); prev.value = String(pcPrev);
+}
+function pcInsp() {
+  const e = pcSel && pcEl(pcSel);
+  $("pcNone").hidden = !!e; $("pcInsp").hidden = !e;
+  $("pcPaper").value = PC().paper || "";
+  if (!e) return;
+  const set = (id, v) => { const el = $(id); if (document.activeElement !== el) el.value = v; };
+  set("pcLabel", e.label || ""); set("pcX", pcPct(e.x)); set("pcY", pcPct(e.y)); set("pcW", pcPct(e.w)); set("pcH", pcPct(e.h));
+  $("pcHide").checked = !!e.hidden;
+  const txt = e.type === "text" || e.type === "quote";
+  $("pcTextBox").hidden = !txt; $("pcText").hidden = e.type !== "text";
+  if (txt) { set("pcText", e.text || ""); $("pcFont").value = e.font || "text"; set("pcSize", pcPct(e.size || .03)); set("pcLh", e.lh || 1.2); $("pcAlign").value = e.align || "left"; }
+  $("pcLinesBox").hidden = e.type !== "lines"; if (e.type === "lines") set("pcN", e.n || 1);
+  $("pcColBox").hidden = e.type === "image"; if (e.type !== "image") $("pcColor").value = e.color || "ink";
+  $("pcImgBox").hidden = e.type !== "image";
+  if (e.type === "image") {
+    $("pcSrcKind").value = e.src === "front" ? "front" : "file"; $("pcSrcRow").hidden = e.src === "front";
+    if (e.src !== "front") set("pcSrc", e.src || ""); $("pcGrey").checked = !!e.grey; $("pcFit").value = e.fit || "cover";
+  }
+}
+function renderPc() { if (!pcMode) return; pcBoxes(); pcList(); pcQuotes(); pcInsp(); pcDraw(); }
+function pcChanged(lists) { commit(); pcBoxes(); if (lists) { pcList(); } pcInsp(); pcDraw(); }
+function setPcMode(on) {
+  pcMode = on;
+  document.querySelector(".wrap:not(.pcwrap)").hidden = on; $("pcwrap").hidden = !on;
+  $("pcBtn").classList.toggle("on", on);
+  if (on) { selId = null; [...$("tabs").children].forEach(b => b.classList.remove("on")); requestAnimationFrame(renderPc); } else render();
+}
+$("pcBtn").addEventListener("click", () => setPcMode(!pcMode));
+$("tabs").addEventListener("click", () => { if (pcMode) setPcMode(false); }, true);
+addEventListener("resize", () => { if (pcMode) { pcBoxes(); pcDraw(); } });
+
+// choosing, moving and resizing on the card
+$("pcBoxes").addEventListener("pointerdown", ev => {
+  const b = ev.target.closest(".pcbox"); if (!b) { pcSel = null; renderPc(); return; }
+  const e = pcEl(b.dataset.id); pcSel = e.id;
+  const { w, h } = pcLayout();
+  pcDrag = { e, rz: ev.target.classList.contains("rz"), x0: ev.clientX, y0: ev.clientY, ex: e.x, ey: e.y, ew: e.w, eh: e.h, w, h, moved: false };
+  $("pcBoxes").setPointerCapture(ev.pointerId); pcBoxes(); pcList(); pcInsp(); ev.preventDefault();
+});
+$("pcBoxes").addEventListener("pointermove", ev => {
+  if (!pcDrag) return;
+  const d = pcDrag, dx = (ev.clientX - d.x0) / d.w, dy = (ev.clientY - d.y0) / d.h, q = v => ev.altKey ? v : Math.round(v * 400) / 400;
+  if (Math.abs(ev.clientX - d.x0) + Math.abs(ev.clientY - d.y0) > 2) d.moved = true;
+  if (d.rz) { d.e.w = Math.max(.002, q(d.ew + dx)); d.e.h = Math.max(.002, q(d.eh + dy)); }
+  else { let mx = dx, my = dy; if (ev.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) my = 0; else mx = 0; } d.e.x = q(d.ex + mx); d.e.y = q(d.ey + my); }
+  pcBoxes(); pcInsp(); pcDraw();
+});
+$("pcBoxes").addEventListener("pointerup", () => { if (pcDrag && pcDrag.moved) pcChanged(); pcDrag = null; });
+$("pcList").addEventListener("click", ev => { const li = ev.target.closest("li"); if (!li) return; pcSel = li.dataset.id; pcBoxes(); pcList(); pcInsp(); });
+
+// the inspector
+const pcNum = (id, fn) => $(id).addEventListener("input", () => { const e = pcEl(pcSel), v = parseFloat($(id).value); if (e && isFinite(v)) { fn(e, v); pcChanged(); } });
+pcNum("pcX", (e, v) => e.x = v / 100); pcNum("pcY", (e, v) => e.y = v / 100); pcNum("pcW", (e, v) => e.w = Math.max(.001, v / 100)); pcNum("pcH", (e, v) => e.h = Math.max(.001, v / 100));
+pcNum("pcSize", (e, v) => e.size = v / 100); pcNum("pcLh", (e, v) => e.lh = v); pcNum("pcN", (e, v) => e.n = Math.max(1, Math.round(v)));
+const pcVal = (id, fn, lists) => $(id).addEventListener(/^(INPUT|TEXTAREA)$/.test($(id).tagName) && $(id).type !== "checkbox" ? "input" : "change",
+  () => { const e = pcEl(pcSel); if (e) { fn(e, $(id).type === "checkbox" ? $(id).checked : $(id).value); pcChanged(lists); } });
+pcVal("pcLabel", (e, v) => e.label = v, true); pcVal("pcText", (e, v) => e.text = v); pcVal("pcFont", (e, v) => e.font = v);
+pcVal("pcAlign", (e, v) => e.align = v); pcVal("pcColor", (e, v) => e.color = v); pcVal("pcHide", (e, v) => e.hidden = v, true);
+pcVal("pcSrcKind", (e, v) => { e.src = v === "front" ? "front" : (e.src && e.src !== "front" ? e.src : "assets/img/postcard/template-stamp.jpg"); });
+pcVal("pcSrc", (e, v) => e.src = v.trim()); pcVal("pcGrey", (e, v) => e.grey = v); pcVal("pcFit", (e, v) => e.fit = v);
+$("pcPaper").addEventListener("input", () => { PC().paper = $("pcPaper").value.trim() || "#fcfbf9"; commit(); pcDraw(); });
+const pcOrder = dir => { const a = PC().els, i = a.findIndex(e => e.id === pcSel), j = i + dir; if (i < 0 || j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; pcChanged(true); };
+$("pcFwd").addEventListener("click", () => pcOrder(1)); $("pcBack").addEventListener("click", () => pcOrder(-1));
+$("pcDup").addEventListener("click", () => { const e = pcEl(pcSel); if (!e) return; const c = JSON.parse(JSON.stringify(e)); c.id = newId(); c.label = (c.label || c.type) + " copy"; c.x += .02; c.y += .02; PC().els.splice(PC().els.indexOf(e) + 1, 0, c); pcSel = c.id; pcChanged(true); });
+const pcDelete = () => { const e = pcEl(pcSel); if (!e) return; PC().els = PC().els.filter(x => x !== e); pcSel = null; pcChanged(true); };
+$("pcDel").addEventListener("click", pcDelete);
+$("pcAdd").addEventListener("click", () => { const e = Object.assign({ id: newId() }, PC_NEW[$("pcAddType").value]()); PC().els.push(e); pcSel = e.id; pcChanged(true); });
+$("pcReset").addEventListener("click", () => {
+  if (!confirm("Put the back of the postcard as the template has it? Your quotes are kept. (Undo still works.)")) return;
+  const q = PC().quotes, pick = PC().pick; S.postcard = JSON.parse(JSON.stringify(TPPostcard.DEFAULT)); S.postcard.quotes = q; S.postcard.pick = pick; pcSel = null; commit(); renderPc();
+});
+// the quotes
+$("pcQAdd").addEventListener("click", () => { (PC().quotes = PC().quotes || []).push({ text: "", by: "" }); pcPrev = PC().quotes.length - 1; commit(); pcQuotes(); pcDraw(); });
+$("pcQuotes").addEventListener("input", ev => {
+  const f = ev.target.dataset.qf, box = ev.target.closest(".pcq"); if (!f || !box) return;
+  PC().quotes[+box.dataset.i][f] = ev.target.value; pcPrev = +box.dataset.i; $("pcPrev").value = String(pcPrev); commit(); pcDraw();
+});
+$("pcQuotes").addEventListener("click", ev => {
+  const i = ev.target.dataset.qdel; if (i == null) return;
+  if (!confirm("Remove quote " + (+i + 1) + "?")) return;
+  PC().quotes.splice(+i, 1); if (PC().pick !== "random" && +PC().pick >= PC().quotes.length) PC().pick = "random"; commit(); pcQuotes(); pcDraw();
+});
+$("pcPick").addEventListener("change", () => { const v = $("pcPick").value; PC().pick = v === "random" ? "random" : +v; commit(); });
+$("pcPrev").addEventListener("change", () => { pcPrev = +$("pcPrev").value; pcDraw(); });
+// keys: nudge and delete the selected part
+function pcKey(ev) {
+  if (typing() || $("dlg").open) return;
+  const e = pcSel && pcEl(pcSel);
+  if (ev.key === "Escape") { pcSel = null; renderPc(); return; }
+  if (!e) return;
+  if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); pcDelete(); return; }
+  const a = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
+  if (a) { ev.preventDefault(); const s = ev.shiftKey ? .01 : .0025; e.x = Math.round((e.x + a[0] * s) * 4000) / 4000; e.y = Math.round((e.y + a[1] * s) * 4000) / 4000; pcChanged(); }
+}
 
 /* go */
 render();

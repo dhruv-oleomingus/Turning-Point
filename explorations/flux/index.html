@@ -5,15 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Flux — Turning Point</title>
 <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Source+Sans+3:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/explore.css?v=20261126a">
 <style>
 /* VOICE: wordless; the work alone, seen from a standing eye.
    IDEA: an hourglass — the whole image turns over and the structure pours out into the air.
    PICTURE: four cor-ten columns on their plinth, horizon on the centre line, which is the neck of the glass.
    COLOUR: flat dust haze inside the frame, a dark surround outside it.
-   LAYOUT: desktop: one centred 4:3 frame; phone: full screen. No text. */
+   LAYOUT: one centred frame the shape of a postcard (3:2; 2:3 on a tall screen — explore.js), Back and
+   Postcard beside it on the left. */
 :root{--surround:#141210;--haze:#dcd2c4}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
@@ -35,22 +34,12 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 #down.invite.on svg{animation:bobDown 2.4s ease-in-out infinite}
 @keyframes bobDown{50%{transform:translateY(5px)}}
 #passage{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(44ch,84%);max-height:72%;overflow-y:auto;overscroll-behavior:contain;
-  margin:0;padding:0 6px;font:400 clamp(16px,1.9vmin,19px)/1.6 Newsreader,Georgia,"Times New Roman",serif;color:#2a2119;text-wrap:pretty;
+  margin:0;padding:0 6px;font:400 clamp(15px,1.75vmin,18px)/1.6 "TP Text","Source Sans 3",sans-serif;color:#2a2119;text-wrap:pretty;
   opacity:0;pointer-events:none;transition:opacity 1.4s ease;scrollbar-width:thin;scrollbar-color:rgba(42,33,25,.35) transparent;
   -webkit-mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent);mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent)}
 #passage p{margin:1.2em 0}
 #passage.on{opacity:1;pointer-events:auto}
 @media(prefers-reduced-motion:reduce){#up.invite.on svg,#down.invite.on svg{animation:none}}
-/* SITE: back to the Turning Point Explore section (same button as Metamorphosis).
-   Phone / narrow window: top-left over the image. Desktop with room: in the dark surround, left of the frame. */
-#back{position:fixed;z-index:5;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));
-  display:inline-flex;align-items:center;gap:.7em;padding:.75em 1.3em .75em 1.05em;
-  font:600 12px/1 "Source Sans 3",system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;
-  color:#449ad4;background:var(--haze);border:1px solid #449ad4;transition:background .35s,color .35s,border-color .35s}   /* back buttons are blue */
-#back:hover,#back:focus-visible{background:#449ad4;color:#fff;outline:none}
-#back.beside{top:50%;left:calc((100vw - var(--fw)) / 2 - 172px);translate:0 -50%;font-size:13px;
-  color:#5aaee6;background:transparent;border-color:rgba(90,174,230,.6)}
-#back.beside:hover,#back.beside:focus-visible{background:#449ad4;color:#fff;border-color:#449ad4}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
@@ -60,7 +49,13 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
   <div id="passage" tabindex="0" aria-live="polite"></div>
   <button id="down" class="nav" type="button" aria-label="Look back down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></button>
 </div>
-<a id="back" href="../../index.html#explore">Explore</a>
+<nav class="xrail" aria-label="Turning Point">
+  <a class="xback" href="../../index.html#explore">Back</a>
+  <button type="button" class="xcard" id="postcard" title="Download this view as a postcard (PDF)">Postcard</button>
+</nav>
+<script src="../shared/explore.js?v=20261126a"></script>
+<script src="../../js/postcard.js?v=20261126a"></script>
+<script src="../shared/postcard.js?v=20261126a"></script>
 
 <script type="module">
 import * as THREE from 'three';
@@ -68,7 +63,6 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 {
 const D2R = Math.PI / 180, PI = Math.PI;
 const coarse = matchMedia('(pointer:coarse)').matches;
-const framed = !coarse;                                   /* desktop: 4:3 frame */
 const TEX = (coarse || Math.min(innerWidth, innerHeight) < 600) ? 512 : 1024;
 /* which textures the boxes wear:
    "atlas" — one picture per column, assets/tex/atlas/col-1.png … col-4.png: every arm of the column in a row, top arm
@@ -153,15 +147,11 @@ content.add(hemi, sun, sun.target);
 const camera = new THREE.PerspectiveCamera(50, 4 / 3, 0.1, 400);
 const view = {az: -0.5, vel: 0, dist: 14};
 function layout() {
-  let w = innerWidth, h = innerHeight;
-  if (framed) {
-    w = Math.floor(Math.min(innerWidth * 0.94, innerHeight * 0.94 * 4 / 3));
-    h = Math.floor(w * 3 / 4);
-  }
+  /* the postcard's shape, centred (explore.js); Back and Postcard beside it */
+  const m = TPX.upright() ? 56 : Math.round(innerHeight * 0.03);
+  const r = TPX.fit({top: m, bottom: m, side: innerWidth > 820 ? 170 : 8}), w = r.w, h = r.h;
   stage.style.width = w + 'px'; stage.style.height = h + 'px';
-  /* SITE: park the back button beside the frame when the surround has room for it */
-  const back = document.getElementById('back');
-  if (back) { document.documentElement.style.setProperty('--fw', w + 'px'); back.classList.toggle('beside', framed && (innerWidth - w) / 2 >= 190); }
+  TPX.rail(r);
   renderer.setSize(w, h);
   const asp = w / h;
   camera.aspect = asp;
@@ -483,6 +473,17 @@ addEventListener('keydown', e => {
   const d = e.code === 'ArrowUp' ? 1 : -1;
   if (look.target > 0.5 && d !== look.dir) look.target = 0; else lookIn(d);
 });
+
+/* ---------- postcard (explorations/shared/postcard.js): the view as it is, drawn again with its long side at 1800 px ---------- */
+TPPostcard.attach(document.getElementById('postcard'), () => {
+  const w = stage.clientWidth, h = stage.clientHeight, pr = renderer.getPixelRatio();
+  renderer.setPixelRatio(1800 / Math.max(w, h)); renderer.setSize(w, h, false);
+  renderer.render(scene, camera);
+  const out = document.createElement('canvas'); out.width = renderer.domElement.width; out.height = renderer.domElement.height;
+  out.getContext('2d').drawImage(renderer.domElement, 0, 0);          // read straight after drawing
+  renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
+  return out;
+}, 'flux');
 
 /* ---------- loop ---------- */
 const clock = new THREE.Clock();

@@ -3,46 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <!-- Confluence: build the interactive piece in this file -->
   <title>Confluence — Turning Point</title>
   <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/explore.css?v=20261125b">
+  <link rel="stylesheet" href="../shared/explore.css?v=20261126a">
   <style>
-    /* your styles */
-    #work { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); letter-spacing: .2em; text-transform: uppercase; font-size: var(--small); }
+    /* Confluence is still being built: until it is, its frame (the postcard's shape, as every piece has) holds its text.
+       The piece will play in #work; the text can then move to About. */
+    html, body { background: var(--surround); overflow: hidden; }
+    #work { background: var(--paper); color: var(--ink); overflow: hidden; }
+    .xread { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; padding: clamp(26px, 7%, 84px) clamp(24px, 7.5%, 104px); }
+    .xread h1 { margin: 0; font: 700 clamp(30px, 3.2vw, 56px)/1 var(--display); }
+    .xread .status { margin: .9em 0 2.2em; font-size: var(--small); letter-spacing: .2em; text-transform: uppercase; color: var(--soft); }
+    .xread .body { column-gap: clamp(28px, 4%, 64px); }
+    .xread .body p { margin: 0 0 1em; font: 400 clamp(15px, .95vw + 2px, 19px)/1.55 var(--sans); break-inside: avoid-column; }
+    #work.is-wide .xread .body { column-count: 2; }
   </style>
 </head>
 <body>
-  <!-- 2. The shared top bar: back link, name, about toggle -->
-  <header class="xbar">
-    <a class="back" href="../../index.html#explore">Turning Point</a>
-    <span class="name"><em>01</em>Confluence</span>
-    <button type="button" id="infoBtn" aria-expanded="false" aria-controls="info">About</button>
-  </header>
+  <nav class="xrail" aria-label="Turning Point">
+    <a class="xback" href="../../index.html#explore">Back</a>
+    <button type="button" class="xcard" id="postcard" title="Download this page as a postcard (PDF)">Postcard</button>
+  </nav>
 
-  <aside class="xinfo" id="info" data-placeholder>
-    <p>Confluence — a short text about this exploration.</p>
-  </aside>
+  <main id="work">
+    <article class="xread">
+      <h1>Confluence</h1>
+      <p class="status">In progress — the piece will play here</p>
+      <div class="body">
+        <p>This piece examines the surface of our structure. By peeling away the pattern from the steel, it turns the shell of the monument into a porous and negotiated space. A membrane between that which is private and public, absolute and abridged, neither here nor there.</p>
+        <p>All surfaces that bind our world together offer this porosity as a counter to absolute containment. Like a newspaper being used to wrap food as the oil permeates out of it; chemicals, sweat, and body heat permeating through the skin; brick structures that breathe with the seasons, water and organisms, gases permeating through the crust of our planet. All negotiating the boundaries of containment.</p>
+        <p>Delhi itself has always been in the process of percolating outwards. Seeping through the boundaries that keep getting drawn and redrawn to define it. The markets of old Delhi are built on fragmented walls and boundaries of an empire (Kashmere Gate, Ajmeri Gate). On the streets of Delhi two distinct languages lost their boundaries, they seeped into each other and Urdu was formed.</p>
+        <p>As you peel past the surface of this piece you find places in Delhi that have leaked out of containment. Spaces of discourse and protests, or archaic spaces in a transition between private and public. Courtyards and colonnades, places of informal gatherings and domestic negotiations. Small places that make it possible for a city to breathe, for the solidity of its walls and institutions to be challenged — permeating the exchange of art, ideas, histories and stories. Where the dominant doctrine can be peeled away to reveal the raw flesh of the future.</p>
+      </div>
+    </article>
+  </main>
 
-  <!-- 3. Your piece goes here: a canvas, p5.js sketch, Three.js scene, video … -->
-  <main id="work" data-placeholder>Interactive piece in progress</main>
-  <!-- until the piece is built: its description from the content editor (Explore → its card's text) -->
-  <script src="../../js/content.js?v=20261125b"></script>
-  <script src="../shared/explore.js?v=20261125b"></script>
-
-  <!-- Optional: the same reaction–diffusion engine used on the homepage -->
-  <!-- <script src="../../js/rd.js"></script> -->
+  <script src="../shared/explore.js?v=20261126a"></script>
+  <script src="../../js/postcard.js?v=20261126a"></script>
+  <script src="../shared/postcard.js?v=20261126a"></script>
   <script>
-    const info = document.getElementById("info"), infoBtn = document.getElementById("infoBtn");
-    infoBtn.addEventListener("click", () => {
-      const open = info.classList.toggle("is-open");
-      infoBtn.setAttribute("aria-expanded", open);
-      infoBtn.textContent = open ? "Close" : "About";
-    });
+    const work = document.getElementById("work");
+    function frame() {
+      const m = TPX.upright() ? 56 : Math.round(innerHeight * 0.03);
+      const r = TPX.fit({ top: m, bottom: m, side: innerWidth > 820 ? 170 : 8 });
+      TPX.place(work, r); TPX.rail(r);
+      work.classList.toggle("is-wide", !r.upright && r.w > 720);
+    }
+    frame(); addEventListener("resize", frame);
+    // the postcard's front: the title and words, typeset (as many paragraphs as fit)
+    const paras = [...document.querySelectorAll(".xread .body p")].map(p => p.textContent);
+    TPPostcard.attach(document.getElementById("postcard"),
+      () => TPPostcard.textFront(document.querySelector(".xread h1").textContent, paras, TPX.upright() ? 1200 : 1800, TPX.upright() ? 1800 : 1200), "confluence", { stamp: "assets/img/postcard/template-stamp.jpg" });
   </script>
-  <!-- 4. Then add a { type: "project", … } box for it in js/content.js -->
 </body>
 </html>

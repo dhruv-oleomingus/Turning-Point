@@ -1,11 +1,17 @@
 /* Shared shell for the interactive explorations.
    Each exploration is its own folder with an index.html that links this file. */
+/* the site's own type (as in css/style.css): titles in TP Display, text in TP Text */
+@font-face { font-family: "TP Display"; src: url(../../assets/fonts/tp-display-bold.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "TP Display"; src: url(../../assets/fonts/tp-display-bold-italic.woff2) format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "TP Text"; src: url(../../assets/fonts/tp-text.woff2) format("woff2"); font-weight: 300 700; font-style: normal; font-display: swap; }
 :root {
   --m: clamp(16px, 1.9vw, 56px);
   --ink: #1f1c19; --grey: #5d5853; --soft: #8d857d; --dim: #d9d0c6;
   --gold: #a9844f; --blue: #449ad4; --rust: #bf6a33; --line: rgba(31, 28, 25, .14);
-  --sans: "Source Sans 3", Calibri, Carlito, "Segoe UI", system-ui, sans-serif;
-  --serif: "Cormorant Garamond", Georgia, serif;
+  --sans: "TP Text", "Source Sans 3", Calibri, "Segoe UI", system-ui, sans-serif;
+  --serif: "TP Display", Georgia, serif;
+  --display: "TP Display", Georgia, serif;
+  --surround: #141210; --paper: #fcfbf9;
   --small: clamp(11px, .45rem + .3vw, 14px);
   --ease: cubic-bezier(.65, .02, .2, 1);
 }
@@ -61,3 +67,15 @@ a { color: inherit; text-decoration: none; }
 .xsoon { max-width: min(34em, 100% - 2 * var(--m)); text-align: center; text-transform: none; letter-spacing: 0; }
 .xsoon__status { margin: 0 0 1.4em; font-size: var(--small); letter-spacing: .2em; text-transform: uppercase; color: var(--soft); }
 .xsoon__text { margin: 0; font-size: clamp(16px, .7rem + .6vw, 22px); line-height: 1.5; color: var(--ink); }
+
+/* ---------- the frame, and the way back ----------
+   Every piece sits in one frame the shape of a postcard: 3:2 on a wide screen, 2:3 upright on a tall one
+   (explore.js → TPX.fit), on a dark surround. Beside it, on the left: Back (to the Explore section) and
+   Postcard (the piece as a postcard, explorations/shared/postcard.js). */
+.xrail { position: fixed; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 1.1em; }
+.xrail.is-top { flex-direction: row; align-items: baseline; gap: 1.6em; }
+.xback { font-family: var(--display); font-style: italic; font-weight: 700; font-size: clamp(20px, 1.45vw, 28px); line-height: 1; color: var(--blue); }
+.xback:hover, .xback:focus-visible { color: #fff; outline: none; }
+.xcard { font: 400 var(--small)/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: #a69d93; background: none; border: 0; padding: 0; cursor: pointer; }
+.xcard:hover, .xcard:focus-visible { color: #fff; outline: none; }
+.xcard[disabled] { opacity: .6; cursor: progress; }

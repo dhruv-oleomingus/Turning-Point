@@ -5,17 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Perforation — Turning Point</title>
   <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/explore.css?v=20261125c">
+  <link rel="stylesheet" href="../shared/explore.css?v=20261126a">
   <style>
-    /* desktop: one 4:3 frame on a dark surround, every control outside it (as in Flux); phones: the frame fills
-       the space between the top bar and the controls */
-    body.perf { background: #141210; color: #d9d0c6; overflow: hidden; }
+    /* one frame the shape of a postcard (3:2; 2:3 on a tall screen) on a dark surround, every control outside it */
+    body.perf { background: var(--surround); color: #d9d0c6; overflow: hidden; }
+    .perf .xbar { justify-content: flex-end; }
     .perf .xbar button { color: #a69d93; }
-    .perf .xbar .back { color: #5aaee6; }
-    .perf .xbar .back:hover, .perf .xbar button:hover { color: #fff; }
+    .perf .xbar button:hover { color: #fff; }
     .perf .xtools { gap: 2.2em; align-items: baseline; }
     .perf .xtools button { color: #a69d93; }
     .perf .xtools button:hover { color: #fff; }
@@ -35,8 +31,11 @@
   </style>
 </head>
 <body class="perf">
+  <nav class="xrail" aria-label="Turning Point">
+    <a class="xback" href="../../index.html#explore">Back</a>
+    <button type="button" class="xcard" id="postcard" title="Download your plate as a postcard (PDF)">Postcard</button>
+  </nav>
   <header class="xbar">
-    <a class="back" href="../../index.html#explore">Turning Point</a>
     <button type="button" id="infoBtn" aria-expanded="false" aria-controls="info">About</button>
   </header>
 
@@ -64,13 +63,15 @@
       <span class="key" style="--c:#6a4fa3"><i></i>Bass</span>
       <span class="key ring"><i></i>Outline · silent</span>
     </span>
-    <button type="button" id="postcard" title="Download your plate as a postcard (PDF)">Postcard</button>
     <button type="button" id="clear">Clear</button>
   </nav>
   <div class="bands" id="bands" aria-hidden="true"></div>
 
   <script src="../../js/rd.js?v=20261125f"></script>
   <script src="../../js/tiles.js?v=20261125d"></script>
+  <script src="../shared/explore.js?v=20261126a"></script>
+  <script src="../../js/postcard.js?v=20261126a"></script>
+  <script src="../shared/postcard.js?v=20261126a"></script>
   <script>
   (function () {
     "use strict";
@@ -78,15 +79,13 @@
     const frame = $("frame"), canvas = $("field"), over = $("over"), hint = $("hint");
     const mobile = matchMedia("(max-width: 820px)").matches;
 
-    /* ---------- the frame: 4:3 on desktop, every control outside it ---------- */
+    /* ---------- the frame: the postcard's shape (explore.js), every control outside it ---------- */
     function placeFrame() {
       const top = document.querySelector(".xbar").getBoundingClientRect().bottom + 6;
       const bot = innerHeight - document.querySelector(".xtools").getBoundingClientRect().top + 6;
-      const availW = innerWidth - (mobile ? 0 : 2 * Math.max(16, innerWidth * .03)), availH = innerHeight - top - bot;
-      let w = availW, h = availH;
-      if (!mobile) { w = Math.min(availW, availH * 4 / 3); h = w * 3 / 4; }
-      Object.assign(frame.style, { width: w + "px", height: h + "px", left: (innerWidth - w) / 2 + "px", top: top + (availH - h) / 2 + "px" });
-      return { w, h };
+      const r = TPX.fit({ top: Math.max(top, mobile ? 52 : 0), bottom: bot, side: mobile ? 8 : 170 });
+      TPX.place(frame, r); TPX.rail(r);
+      return r;
     }
     const fr = placeFrame();
 
@@ -417,69 +416,20 @@
       return out;
     }
 
-    /* ---------- postcard ----------
-       A two-page PDF, 6 × 4 inches: the front is the plate as it is now, drawn afresh at 300 dpi and set on
-       white across the card; the back is the template (assets/img/perforation/postcard-back.jpg — any JPEG
-       of a 3:2 card can replace it). The PDF is written here, no library: each page one JPEG. */
-    const CARD_PT = [6 * 72, 4 * 72], CARD_PX = [1800, 1200], BACK = "../../assets/img/perforation/postcard-back.jpg";
-    function jpegSize(b) {   // width and height from a JPEG's frame header
-      for (let i = 2; i + 9 < b.length;) {
-        if (b[i] !== 0xFF) { i++; continue; }
-        const m = b[i + 1], len = (b[i + 2] << 8) | b[i + 3];
-        if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) return [(b[i + 7] << 8) | b[i + 8], (b[i + 5] << 8) | b[i + 6]];
-        i += 2 + len;
-      }
-      return null;
-    }
-    const toJpeg = cv => new Promise(r => cv.toBlob(b => b.arrayBuffer().then(a => r(new Uint8Array(a))), "image/jpeg", 0.93));
-    async function frontJpeg() {
-      const s = Math.min(CARD_PX[0] / fw, CARD_PX[1] / fh);   // the plate, as large as fits the card
-      const w = Math.round(fw * s), h = Math.round(fh * s);
+    /* ---------- postcard (explorations/shared/postcard.js) ----------
+       The front is the plate as it is now, drawn afresh with its long side at 1800 px (300 dpi on the card). */
+    function frontCanvas() {
+      const s = 1800 / Math.max(fw, fh), w = Math.round(fw * s), h = Math.round(fh * s);
       canvas.width = w; canvas.height = h; rd.dpr = s;
       drawPlate();
-      const out = document.createElement("canvas"); out.width = CARD_PX[0]; out.height = CARD_PX[1];
+      const out = document.createElement("canvas"); out.width = w; out.height = h;
       const g = out.getContext("2d");
-      g.fillStyle = "#fff"; g.fillRect(0, 0, out.width, out.height);
-      g.drawImage(canvas, (out.width - w) / 2, (out.height - h) / 2);   // read straight after drawing, before the page shows it
+      g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
+      g.drawImage(canvas, 0, 0);                // read straight after drawing, before the page shows it
       rd.resize();
-      return { bytes: await toJpeg(out), w: out.width, h: out.height };
+      return out;
     }
-    function pdf(pages, [pw, ph]) {
-      const enc = new TextEncoder(), parts = [], offs = [];
-      let len = 0;
-      const put = x => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); len += b.length; };
-      const obj = (n, body) => { offs[n] = len; put(`${n} 0 obj\n`); body(); put("\nendobj\n"); };
-      put("%PDF-1.4\n"); put(new Uint8Array([37, 226, 227, 207, 211, 10]));
-      obj(1, () => put("<< /Type /Catalog /Pages 2 0 R >>"));
-      obj(2, () => put(`<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 3} 0 R`).join(" ")}] /Count ${pages.length} >>`));
-      pages.forEach((im, i) => {
-        const n = 3 + i * 3, draw = `q ${pw} 0 0 ${ph} 0 0 cm /Im${i} Do Q`;
-        obj(n, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im${i} ${n + 2} 0 R >> >> /Contents ${n + 1} 0 R >>`));
-        obj(n + 1, () => { put(`<< /Length ${draw.length} >>\nstream\n${draw}\nendstream`); });
-        obj(n + 2, () => {
-          put(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`);
-          put(im.bytes); put("\nendstream");
-        });
-      });
-      const xref = len, count = 3 + pages.length * 3;
-      put(`xref\n0 ${count}\n0000000000 65535 f \n` + offs.slice(1).map(o => String(o).padStart(10, "0") + " 00000 n \n").join(""));
-      put(`trailer\n<< /Size ${count} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
-      return new Blob(parts, { type: "application/pdf" });
-    }
-    const cardBtn = $("postcard");
-    cardBtn.addEventListener("click", async () => {
-      if (cardBtn.disabled) return;
-      cardBtn.disabled = true; cardBtn.textContent = "Making…";
-      try {
-        const front = await frontJpeg();
-        const bb = new Uint8Array(await (await fetch(BACK)).arrayBuffer()), size = jpegSize(bb);
-        const pages = [front]; if (size) pages.push({ bytes: bb, w: size[0], h: size[1] });
-        const url = URL.createObjectURL(pdf(pages, CARD_PT)), a = document.createElement("a");
-        a.href = url; a.download = "turning-point-postcard.pdf"; document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      } catch (e) { console.warn("Postcard failed:", e); }
-      cardBtn.disabled = false; cardBtn.textContent = "Postcard";
-    });
+    TPPostcard.attach($("postcard"), frontCanvas, "perforation");
 
     let last = performance.now();
     function tick(now) {

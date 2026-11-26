@@ -37,11 +37,10 @@ window.SITE = {
         {
           "type": "project",
           "index": "01",
-          "title": "Confluence",
-          "text": "Placeholder — a short description of Confluence: its question, and what the visitor does.",
-          "href": "explorations/confluence/index.html",
-          "thumb": "assets/img/explore/confluence.jpg",
-          "status": "In progress"
+          "title": "Perforation",
+          "text": "Touch the surface to seed growth. The steel is cut wherever the pattern takes hold — a small field in which to watch the life-processes on the columns emerge.",
+          "href": "explorations/perforation/index.html",
+          "thumb": "assets/img/explore/perforation.jpg"
         },
         {
           "type": "project",
@@ -65,7 +64,7 @@ window.SITE = {
           "type": "project",
           "index": "04",
           "title": "Emergence",
-          "text": "Placeholder — a short description of Emergence: its question, and what the visitor does.",
+          "text": "This sketch examines the idea of emergence through simple acts of rupture where a structure starts from a nucleus and disperses into unforeseen trajectories.",
           "href": "explorations/emergence/index.html",
           "thumb": "assets/img/explore/emergence.jpg",
           "status": "In progress"
@@ -73,10 +72,11 @@ window.SITE = {
         {
           "type": "project",
           "index": "05",
-          "title": "Perforation",
-          "text": "Touch the surface to seed growth. The steel is cut wherever the pattern takes hold — a small field in which to watch the life-processes on the columns emerge.",
-          "href": "explorations/perforation/index.html",
-          "thumb": "assets/img/explore/perforation.jpg"
+          "title": "Confluence",
+          "text": "This piece examines the surface of our structure. By peeling away the pattern from the steel, it turns the shell of the monument into a porous and negotiated space.",
+          "href": "explorations/confluence/index.html",
+          "thumb": "assets/img/explore/confluence.jpg",
+          "status": "In progress"
         }
       ],
       "layout": "horizontal"

@@ -7,18 +7,35 @@
     <title>Metamorphosis — Turning Point</title>
     <meta name="description" content="A web accompaniment to Turning Point — scroll to turn the column." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,400&display=swap" rel="stylesheet" />
     <script type="module" crossorigin src="./assets/index-Bhx-Jihu.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-LaL7Vu0w.css">
-    <!-- the site's back buttons are blue -->
-    <style>#back{color:#449ad4;border-color:#449ad4}#back:hover,#back:focus-visible{background:#449ad4;color:#fff}</style>
+    <!-- In the site: the shared frame (the postcard's shape, on a dark surround), the site's type, and Back and
+         Postcard beside the frame (explorations/shared). The piece itself (assets/index-*.js) is untouched: it
+         sizes itself to #stage, which is placed below; its WebGL canvas keeps its drawing so a postcard can be taken. -->
+    <link rel="stylesheet" href="../shared/explore.css?v=20261126a">
+    <style>
+      html, body { background: var(--surround); }
+      body, #title, #caption, #hint, #counter, #loader { font-family: "TP Text", "Source Sans 3", sans-serif; }
+      #stage { box-shadow: none; }
+      #ui { overflow: hidden; }
+      .in-site #title { top: max(28px, env(safe-area-inset-top)); }
+    </style>
+    <script>
+      (function () {   // keep the drawing on the piece's canvas (for the postcard)
+        const get = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (type, opts) {
+          if (/webgl/.test(type) && this.id === "stage") opts = Object.assign({}, opts, { preserveDrawingBuffer: true });
+          return get.call(this, type, opts);
+        };
+      })();
+    </script>
   </head>
   <body>
     <canvas id="stage" aria-label="Turning Point — an interactive column. Scroll or swipe to turn it."></canvas>
-    <!-- Shown only when this piece runs inside the Turning Point site (explorations/…) -->
-    <a id="back" href="../../index.html#explore" hidden>Explore</a>
+    <nav class="xrail" aria-label="Turning Point">
+      <a class="xback" href="../../index.html#explore">Back</a>
+      <button type="button" class="xcard" id="postcard" title="Download this view as a postcard (PDF)">Postcard</button>
+    </nav>
     <div id="ui">
       <div id="loader"><span>Turning Point</span><div class="bar"><i></i></div></div>
       <div id="title" class="hidden">Turning Point</div>
@@ -26,8 +43,23 @@
       <div id="hint" class="hidden">scroll</div>
       <div id="counter" aria-hidden="true">0000°</div>
     </div>
+    <script src="../shared/explore.js?v=20261126a"></script>
+    <script src="../../js/postcard.js?v=20261126a"></script>
+    <script src="../shared/postcard.js?v=20261126a"></script>
     <script>
-      if (/\/explorations\//.test(location.pathname)) { document.getElementById('back').hidden = false; document.body.classList.add('in-site'); }
+      document.body.classList.add('in-site');
+      const stageEl = document.getElementById('stage'), uiEl = document.getElementById('ui');
+      function frame() {
+        const m = TPX.upright() ? 56 : Math.round(innerHeight * 0.03);
+        const r = TPX.fit({ top: m, bottom: m, side: innerWidth > 820 ? 170 : 8 });
+        TPX.place(stageEl, r); TPX.place(uiEl, r); TPX.rail(r);
+      }
+      frame(); addEventListener('resize', frame);
+      TPPostcard.attach(document.getElementById('postcard'), () => {
+        const out = document.createElement('canvas'); out.width = stageEl.width; out.height = stageEl.height;
+        out.getContext('2d').drawImage(stageEl, 0, 0);
+        return out;
+      }, 'metamorphosis');
     </script>
   </body>
 </html>
