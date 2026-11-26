@@ -34,7 +34,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 @keyframes bob{50%{transform:translateY(-5px)}}
 #down.invite.on svg{animation:bobDown 2.4s ease-in-out infinite}
 @keyframes bobDown{50%{transform:translateY(5px)}}
-#passage{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(34ch,78%);max-height:40%;overflow-y:auto;overscroll-behavior:contain;
+#passage{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(44ch,84%);max-height:72%;overflow-y:auto;overscroll-behavior:contain;
   margin:0;padding:0 6px;font:400 clamp(16px,1.9vmin,19px)/1.6 Newsreader,Georgia,"Times New Roman",serif;color:#2a2119;text-wrap:pretty;
   opacity:0;pointer-events:none;transition:opacity 1.4s ease;scrollbar-width:thin;scrollbar-color:rgba(42,33,25,.35) transparent;
   -webkit-mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent);mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent)}
@@ -55,7 +55,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 </head>
 <body>
-<div id="stage" aria-label="Turning Point: four cor-ten columns. Press space or tap to turn the image over; drag to walk around.">
+<div id="stage" aria-label="Turning Point: four cor-ten columns. Tap or press space to turn the image over; drag to walk around.">
   <button id="up" class="nav" type="button" aria-label="Look up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
   <div id="passage" tabindex="0" aria-live="polite"></div>
   <button id="down" class="nav" type="button" aria-label="Look back down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></button>
@@ -89,7 +89,7 @@ const ATLAS = TEX_SET === 'atlas'
 /* tune freely */
 const EYE = 1.65;                                         /* standing eye height = horizon = flip axis */
 const FLIP_DUR = 3.0, ROLL_DUR = 1.2;
-const STAG_APART = 0.34, STAG_GATHER = 0.22;              /* seconds between successive arms */
+const STAG_APART = 0.07, STAG_GATHER = 0.055;             /* seconds between successive arms (plus a little at random, coming apart) */
 const SPIN_SPEED = 0;                                     /* rad/s while inverted (0: it holds still as it comes apart; it was 0.14) */
 const LIT = false;                                        /* false: no lights or shadows — every surface shows its texture evenly */
 const PL = 48.8;                                          /* ground slab: 4 × the 40 ft plinth */
@@ -198,7 +198,7 @@ cv.addEventListener('pointerup', e => {
   if (!drag || e.pointerId !== drag.id) return;
   const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0), held = e.timeStamp - drag.t0;
   drag = null;
-  if (moved < 8 && held < 350 && look.s < 0.05) { askMotion(); wantFlipped = !wantFlipped; view.vel = 0; }
+  if (moved < 8 && held < 350 && look.s < 0.05) { wantFlipped = !wantFlipped; view.vel = 0; }
 });
 cv.addEventListener('pointercancel', () => { drag = null; });
 
@@ -234,13 +234,13 @@ function schedule(toFlipped, at) {
   if (toFlipped) {
     let i = 0;
     for (const a of order) {
-      if (a.mode === 'home') a.pend = {type: 'fall', at: at + 0.6 + (i++) * STAG_APART};
+      if (a.mode === 'home') a.pend = {type: 'fall', at: at + 0.3 + (i++) * STAG_APART + rnd(0, 0.35)};
       else if (a.mode === 'rise') a.pend = {type: 'fall', at};
       else a.pend = null;
     }
   } else {
     arms.filter(a => a.mode === 'float').sort((p, q) => q.seq - p.seq)
-      .forEach((a, i) => a.pend = {type: 'rise', at: at + 0.4 + i * STAG_GATHER});
+      .forEach((a, i) => a.pend = {type: 'rise', at: at + 0.2 + i * STAG_GATHER});
     for (const a of arms) {
       if (a.mode === 'fall') a.pend = {type: 'rise', at};
       else if (a.mode === 'home') a.pend = null;
@@ -260,18 +260,26 @@ function slotPose(a) {
   return slotP.copy(a.lc).applyQuaternion(slotQ).add(slotO);
 }
 
-/* Turned over, the structure comes apart downward: each arm drops straight down the screen, by an amount
-   that grows with how far it hangs below the (now overhead) ground — so the gaps between the arms keep
-   widening, as if the structure were slowly diffusing below — then floats there, bobbing gently. */
+/* Turned over, the structure comes apart downward: each arm drops down the screen, by an amount that grows
+   with how far it hangs below the (now overhead) ground — so the gaps between the arms keep widening — drifting
+   a little sideways and turning a little as it goes, each at its own pace, then floats there, bobbing gently. */
 const STRETCH = 0.8;      /* an arm drops this × its distance below the ground (0.8: the hanging columns spread to 1.8× their length) */
-const FALL_SPEED = 0.5;   /* metres a second, roughly: a slow, even drop */
+const FALL_SPEED = 1.5;   /* metres a second, roughly (each arm ±30%) */
+const SCATTER = 0.3;      /* sideways drift: this × the drop (each arm a random share of it), plus up to 0.25 m */
+const TUMBLE = 0.35;      /* how far an arm turns as it falls, radians at most */
+const SNAP = 2.6;         /* coming home: the arms speed up into their places (t^SNAP) and stop there at once */
 const vG = new THREE.Vector3();
 function planFloat(a) {
   const cw = vA.copy(a.c0).applyMatrix4(content.matrixWorld);
   const ground = vG.set(0, 0, 0).applyMatrix4(content.matrixWorld).y;
   a.drop = Math.max(0, ground - cw.y) * STRETCH + rnd(0.05, 0.25);
   a.anchor = a.c0.clone().addScaledVector(gL, a.drop);
-  a.qA = a.q0.clone();
+  // a sideways drift, across the fall
+  const side = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1));
+  side.addScaledVector(gL, -side.dot(gL)).normalize();
+  a.side = side.multiplyScalar(a.drop * SCATTER * rnd(0.2, 1) + rnd(0, 0.25));
+  a.anchor.add(a.side);
+  a.qA = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(), rnd(0.25, 1) * TUMBLE).multiply(a.q0);
   a.bobA = rnd(0.04, 0.12); a.bobW = rnd(0.25, 0.5); a.bobP = rnd(0, 2 * PI);
   a.tAx = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(); a.tA = rnd(0.015, 0.05); a.tW = rnd(0.2, 0.45);
 }
@@ -284,10 +292,10 @@ function begin(a, type, now) {
     gL.set(0, -1, 0).applyQuaternion(qTmp.copy(world.quaternion).invert());
     planFloat(a);
     a.seq = ++seq;
-    a.dur = Math.max(1.2, a.drop / FALL_SPEED);
+    a.dur = Math.max(0.7, a.drop / (FALL_SPEED * rnd(0.7, 1.3)));
     a.mode = 'fall';
   } else {
-    a.dur = 2.8;
+    a.dur = rnd(1.1, 1.4);
     a.mode = 'rise';
   }
 }
@@ -305,12 +313,13 @@ function updateArm(a, now) {
   } else if (a.mode === 'float') {
     floatPose(a, now); place(a, cNow, qNow);
   } else if (a.mode === 'fall') {
-    const t = Math.min(1, (now - a.t0) / a.dur), s = 1 - (1 - t) * (1 - t);   // straight down, easing to rest
-    cNow.copy(a.c0).lerp(a.anchor, s);
-    place(a, cNow, a.q0);
+    const t = Math.min(1, (now - a.t0) / a.dur), s = 1 - (1 - t) * (1 - t);   // down, easing to rest
+    const sd = smooth(0, 1, t);                                                   // the drift and the turn come on gently
+    cNow.copy(a.c0).lerp(a.anchor, s).addScaledVector(a.side, sd - s);
+    place(a, cNow, qNow.copy(a.q0).slerp(a.qA, sd));
     if (t >= 1) { a.mode = 'float'; a.fT = now; a.fG = gL.clone(); }
   } else if (a.mode === 'rise') {
-    const t = Math.min(1, (now - a.t0) / a.dur), s = ease(t);
+    const t = Math.min(1, (now - a.t0) / a.dur), s = Math.pow(t, SNAP);   // slow to leave, quickening into place
     slotPose(a);
     vD.copy(slotP);
     vA.copy(X).applyQuaternion(slotQ).setY(0);
@@ -318,7 +327,7 @@ function updateArm(a, now) {
     vB.copy(vD).sub(a.c0).multiplyScalar(0.2).add(a.c0); vB.y += 0.5;
     vC.copy(vA).multiplyScalar(1.1).add(vD); vC.y += 0.15;
     bez(cNow, a.c0, vB, vC, vD, s);
-    qNow.copy(a.q0).slerp(slotQ, smooth(0.05, 0.85, t));
+    qNow.copy(a.q0).slerp(slotQ, smooth(0, 0.75, t));   // squared up just before it lands
     place(a, cNow, qNow);
     if (t >= 1) a.mode = 'home';
   }
@@ -412,34 +421,8 @@ gl.load('assets/structure.glb', onModel, undefined, () => {
     .catch(modelFail);
 });
 
-/* ---------- input: space, tap, turning the phone over ---------- */
-const motion = {active: false, inv: false, s180: false, asked: false};
-const screenAngle = () => { const a = (screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0; return ((a % 360) + 360) % 360; };
-let lastAngle = screenAngle();
-motion.s180 = lastAngle === 180;
-function onOrient(e) {
-  if (e.beta == null) return;
-  motion.active = true;
-  const uy = Math.sin(e.beta * D2R);                     /* +1 upright portrait, -1 upside down */
-  const was = motion.inv;
-  if (!motion.inv && uy < -0.6) motion.inv = true;
-  else if (motion.inv && uy > 0.4) motion.inv = false;
-  if (was !== motion.inv) wantFlipped = !wantFlipped;
-}
-function onScreen() {
-  const a = screenAngle();
-  if ((a === 90 && lastAngle === 270) || (a === 270 && lastAngle === 90)) wantFlipped = !wantFlipped;
-  motion.s180 = a === 180; lastAngle = a;
-}
-if (screen.orientation) screen.orientation.addEventListener('change', onScreen);
-else addEventListener('orientationchange', onScreen);
-const needsAsk = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
-if (typeof DeviceOrientationEvent !== 'undefined' && !needsAsk) addEventListener('deviceorientation', onOrient);
-function askMotion() {
-  if (!needsAsk || motion.asked) return;
-  motion.asked = true;
-  DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') addEventListener('deviceorientation', onOrient); }).catch(() => {});
-}
+/* ---------- input: a tap or click on the image turns it over (and the space bar); scrolling only looks, and turning
+   the phone does nothing ---------- */
 addEventListener('keydown', e => {
   if (e.code !== 'Space' || e.repeat) return;
   e.preventDefault(); wantFlipped = !wantFlipped;
@@ -516,9 +499,7 @@ renderer.setAnimationLoop(() => {
   updateLookUI();
 
   if (ready && !anim.on) {
-    const wantRoll = motion.active && (motion.inv !== motion.s180);
-    const turn = flipped !== wantFlipped, roll = rollParity !== wantRoll;
-    if (turn || roll) startAnim(turn, roll, now);
+    if (flipped !== wantFlipped) startAnim(true, false, now);
   }
   if (anim.on) {
     let t = (now - anim.t0) / anim.dur;
