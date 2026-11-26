@@ -85,8 +85,8 @@ const EYE = 1.65;                                         /* standing eye height
 const FLIP_DUR = 3.0, ROLL_DUR = 1.2;
 const STAG_APART = 0.07, STAG_GATHER = 0.055;             /* seconds between successive arms (plus a little at random, coming apart) */
 /* EXPERIMENT: more copies of the structure in the background, in a ring on the ground beyond the walk-around;
-   each turns slowly on its own and comes apart (and back) with the rest. ?copies=0 shows the one alone. */
-const COPIES = +(new URLSearchParams(location.search).get('copies') ?? 6);
+   each turns slowly on its own and comes apart (and back) with the rest. Off for now (COPIES 0). */
+const COPIES = +(new URLSearchParams(location.search).get('copies') ?? 0);   /* 0 for now; ?copies=6 to see them */
 const COPY_RING = [15, 21];                               /* metres from the centre */
 const COPY_TURN = [0.04, 0.09];                           /* rad/s each copy turns (either way) */
 const copies = [];
