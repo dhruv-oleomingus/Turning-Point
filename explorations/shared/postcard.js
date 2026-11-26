@@ -38,25 +38,27 @@
     pick: "random"                                                       // "random", or the number of a quote (0, 1, …)
   };
   const COLOURS = { ink: "#1f1c19", grey: "#5d5853", accent: "#449ad4", line: "#b9b4ae", white: "#ffffff" };
-  const FONTS = {                                                       // canvas font for each face (size added)
-    "display": "700 {s}px 'TP Display', Georgia, serif",
-    "display-italic": "italic 700 {s}px 'TP Display', Georgia, serif",
-    "text": "400 {s}px 'TP Text', 'Source Sans 3', sans-serif",
-    "text-light": "300 {s}px 'TP Text', 'Source Sans 3', sans-serif",
-    "text-italic": "italic 300 {s}px 'TP Text', 'Source Sans 3', sans-serif"
+  const FONTS = {                                                       // canvas font for each face (size added): the site's type
+    "display": "700 {s}px 'Noto Serif', Georgia, serif",
+    "display-italic": "italic 700 {s}px 'Noto Serif', Georgia, serif",
+    "text": "400 {s}px Roboto, Arial, sans-serif",
+    "text-light": "300 {s}px Roboto, Arial, sans-serif",
+    "text-italic": "italic 300 {s}px Roboto, Arial, sans-serif"
   };
   const config = () => window.TP_POSTCARD && Array.isArray(window.TP_POSTCARD.els) ? window.TP_POSTCARD : DEFAULT;
 
-  /* the site's fonts, for drawing */
+  /* the site's fonts (Noto Serif for titles, Roboto for text, from Google Fonts), loaded before drawing */
+  const GF = "https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,700;1,700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400&display=swap";
   let fontsP = null;
   function fonts() {
     if (fontsP) return fontsP;
-    const faces = [
-      ["TP Display", "assets/fonts/tp-display-bold.woff2", { weight: "700", style: "normal" }],
-      ["TP Display", "assets/fonts/tp-display-bold-italic.woff2", { weight: "700", style: "italic" }],
-      ["TP Text", "assets/fonts/tp-text.woff2", { weight: "300 700", style: "normal" }]
-    ].map(([fam, src, d]) => new FontFace(fam, `url(${at(src)})`, d));
-    fontsP = Promise.all(faces.map(f => f.load().then(x => document.fonts.add(x)).catch(() => {}))).catch(() => {});
+    let link = [...document.querySelectorAll("link[rel=stylesheet]")].find(l => l.href === GF);
+    const css = link ? Promise.resolve() : new Promise(res => {
+      link = document.createElement("link"); link.rel = "stylesheet"; link.href = GF;
+      link.onload = link.onerror = () => res(); document.head.appendChild(link);
+    });
+    const faces = Object.values(FONTS).map(f => f.replace("{s}", "20"));
+    fontsP = css.then(() => Promise.all(faces.map(f => document.fonts.load(f).catch(() => {})))).catch(() => {});
     return fontsP;
   }
   const imgCache = {};

@@ -13,7 +13,7 @@
    COLOUR: flat dust haze inside the frame, a dark surround outside it.
    LAYOUT: one centred frame the shape of a postcard (3:2; 2:3 on a tall screen — explore.js), Back and
    Postcard beside it on the left. */
-:root{--surround:#141210;--haze:#dcd2c4}
+:root{--surround:#888888;--haze:#dcd2c4}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 #stage{position:fixed;left:50%;top:50%;width:100vw;height:100vh;transform-origin:50% 50%;background:var(--haze);
@@ -34,7 +34,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 #down.invite.on svg{animation:bobDown 2.4s ease-in-out infinite}
 @keyframes bobDown{50%{transform:translateY(5px)}}
 #passage{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(44ch,84%);max-height:72%;overflow-y:auto;overscroll-behavior:contain;
-  margin:0;padding:0 6px;font:400 clamp(15px,1.75vmin,18px)/1.6 "TP Text","Source Sans 3",sans-serif;color:#2a2119;text-wrap:pretty;
+  margin:0;padding:0 6px;font:400 clamp(15px,1.75vmin,18px)/1.6 Roboto,Arial,sans-serif;color:#2a2119;text-wrap:pretty;
   opacity:0;pointer-events:none;transition:opacity 1.4s ease;scrollbar-width:thin;scrollbar-color:rgba(42,33,25,.35) transparent;
   -webkit-mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent);mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent)}
 #passage p{margin:1.2em 0}
