@@ -13,7 +13,7 @@
    COLOUR: flat dust haze inside the frame, a dark surround outside it.
    LAYOUT: one centred frame the shape of a postcard (3:2; 2:3 on a tall screen — explore.js), Back and
    Postcard beside it on the left. */
-:root{--surround:#888888;--haze:#dcd2c4}
+:root{--surround:#888888;--haze:#3a3a3a;--ink:#ece8e3}   /* sky dark grey; text and arrows light on it */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 #stage{position:fixed;left:50%;top:50%;width:100vw;height:100vh;transform-origin:50% 50%;background:var(--haze);
@@ -22,11 +22,11 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 #stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 #stage canvas:active{cursor:grabbing}
 .nav{position:absolute;left:50%;translate:-50% 0;width:48px;height:48px;border:0;border-radius:50%;padding:0;display:grid;place-items:center;
-  background:transparent;color:#2a2119;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .8s ease}
+  background:transparent;color:var(--ink);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .8s ease}
 .nav svg{width:30px;height:30px}
 .nav.on{opacity:.75;pointer-events:auto}
 .nav.on:hover{opacity:1}
-.nav:focus-visible{outline:2px solid #2a2119;outline-offset:2px}
+.nav:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 #up{top:max(10px,env(safe-area-inset-top))}
 #up.invite.on svg{animation:bob 2.4s ease-in-out infinite}
 #down{bottom:max(10px,env(safe-area-inset-bottom))}
@@ -34,8 +34,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--surround)}
 #down.invite.on svg{animation:bobDown 2.4s ease-in-out infinite}
 @keyframes bobDown{50%{transform:translateY(5px)}}
 #passage{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(44ch,84%);max-height:72%;overflow-y:auto;overscroll-behavior:contain;
-  margin:0;padding:0 6px;font:400 clamp(15px,1.75vmin,18px)/1.6 Roboto,Arial,sans-serif;color:#2a2119;text-wrap:pretty;
-  opacity:0;pointer-events:none;transition:opacity 1.4s ease;scrollbar-width:thin;scrollbar-color:rgba(42,33,25,.35) transparent;
+  margin:0;padding:0 6px;font:400 clamp(15px,1.75vmin,18px)/1.6 Roboto,Arial,sans-serif;color:var(--ink);text-wrap:pretty;
+  opacity:0;pointer-events:none;transition:opacity 1.4s ease;scrollbar-width:thin;scrollbar-color:rgba(236,232,227,.35) transparent;
   -webkit-mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent);mask-image:linear-gradient(transparent,#000 1.2em,#000 calc(100% - 1.2em),transparent)}
 #passage p{margin:1.2em 0}
 #passage.on{opacity:1;pointer-events:auto}
@@ -87,9 +87,10 @@ const STAG_APART = 0.07, STAG_GATHER = 0.055;             /* seconds between suc
 const SPIN_SPEED = 0;                                     /* rad/s while inverted (0: it holds still as it comes apart; it was 0.14) */
 const LIT = false;                                        /* false: no lights or shadows — every surface shows its texture evenly */
 const PL = 48.8;                                          /* ground slab: 4 × the 40 ft plinth */
-const HAZE = '#dcd2c4';
+const HAZE = '#3a3a3a';                                   /* the sky: dark grey */
+const GROUND = '#2e2e2e';                                 /* the ground: a shade darker */
 const LOOK_MAX = 80 * D2R;
-const CLOSER = 0.69;                                      /* camera distance × this: 0.69 ≈ 31% closer than the framing that shows it all */                                /* how far you tilt up to meet the upturned ground */
+const CLOSER = 0.552;                                     /* camera distance × this: 0.552 ≈ 45% closer than the framing that shows it all (0.69, then 20% closer) */                                /* how far you tilt up to meet the upturned ground */
 
 /* passages read on the underside of the upturned ground — one is drawn at random each time */
 const PASSAGES = [
@@ -127,8 +128,8 @@ content.position.set(0, -EYE, 0);
 world.add(content); content.add(structure); scene.add(world);
 
 const plinth = new THREE.Mesh(new THREE.BoxGeometry(PL, 0.06, PL), LIT
-  ? new THREE.MeshStandardMaterial({color: '#d8c9b3', roughness: 0.95})
-  : new THREE.MeshBasicMaterial({color: '#d8c9b3', toneMapped: false}));
+  ? new THREE.MeshStandardMaterial({color: GROUND, roughness: 0.95})
+  : new THREE.MeshBasicMaterial({color: GROUND, toneMapped: false}));
 plinth.position.y = -0.03; plinth.receiveShadow = LIT;
 content.add(plinth);
 
