@@ -52,7 +52,7 @@
     // (draw it again at 1800 px on its long side and copy it straight after drawing — see perforation or flux)
     const paras = [...document.querySelectorAll(".xread .body p")].map(p => p.textContent);
     TPPostcard.attach(document.getElementById("postcard"),
-      () => TPPostcard.textFront(document.querySelector(".xread h1").textContent, paras, TPX.upright() ? 1200 : 1800, TPX.upright() ? 1800 : 1200), "exploration");
+      () => TPPostcard.textFront(document.querySelector(".xread h1").textContent, paras, 1800, 1200), "exploration");
   </script>
 </body>
 </html>

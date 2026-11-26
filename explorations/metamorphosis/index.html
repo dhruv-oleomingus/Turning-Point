@@ -62,7 +62,7 @@
         const out = document.createElement('canvas'); out.width = stageEl.width; out.height = stageEl.height;
         out.getContext('2d').drawImage(stageEl, 0, 0);
         return out;
-      }, 'metamorphosis');
+      }, 'metamorphosis', { bg: '#fbfaf6' });   // an upright view (phone) sits whole on the card, on the piece's paper
     </script>
   </body>
 </html>

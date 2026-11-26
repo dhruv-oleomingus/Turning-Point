@@ -53,7 +53,7 @@
     // the postcard's front: the title and words, typeset (as many paragraphs as fit)
     const paras = [...document.querySelectorAll(".xread .body p")].map(p => p.textContent);
     TPPostcard.attach(document.getElementById("postcard"),
-      () => TPPostcard.textFront(document.querySelector(".xread h1").textContent, paras, TPX.upright() ? 1200 : 1800, TPX.upright() ? 1800 : 1200), "emergence", { stamp: "assets/img/postcard/template-stamp.jpg" });
+      () => TPPostcard.textFront(document.querySelector(".xread h1").textContent, paras, 1800, 1200), "emergence", { stamp: "assets/img/postcard/template-stamp.jpg" });
   </script>
 </body>
 </html>

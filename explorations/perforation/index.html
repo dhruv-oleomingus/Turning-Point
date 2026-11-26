@@ -429,7 +429,7 @@
       rd.resize();
       return out;
     }
-    TPPostcard.attach($("postcard"), frontCanvas, "perforation");
+    TPPostcard.attach($("postcard"), frontCanvas, "perforation", { portrait: "rotate" });   // an upright plate (phone) turned to fill the card
 
     let last = performance.now();
     function tick(now) {

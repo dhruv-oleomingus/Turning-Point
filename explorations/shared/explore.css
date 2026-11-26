@@ -78,3 +78,16 @@ a { color: inherit; text-decoration: none; }
 .xcard { font: 400 var(--small)/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: #2a2622; background: none; border: 0; padding: 0; cursor: pointer; }
 .xcard:hover, .xcard:focus-visible { color: #fff; outline: none; }
 .xcard[disabled] { opacity: .6; cursor: progress; }
+
+/* the postcard, made: a sheet with the card, to download, or to share or email (explorations/shared/postcard.js) */
+.xsheet { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(20, 18, 16, .55); }
+.xsheet__card { width: min(440px, 100%); padding: 18px 18px 16px; background: #fcfbf9; color: #1f1c19; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); font-family: var(--sans); }
+.xsheet__front { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; background: #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .18); }
+.xsheet__title { margin: 14px 0 4px; font: 700 20px/1.2 var(--display); color: #1f1c19; }
+.xsheet__note { margin: 0 0 14px; font-size: 13.5px; line-height: 1.45; color: #5d5853; }
+.xsheet__btns { display: flex; flex-wrap: wrap; gap: 10px; }
+.xsheet__btns button { font: 500 12.5px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; padding: 12px 15px; border: 1px solid var(--blue); background: none; color: var(--blue); cursor: pointer; }
+.xsheet__btns button:hover, .xsheet__btns button:focus-visible { background: var(--blue); color: #fff; outline: none; }
+.xsheet__btns .primary { background: var(--blue); color: #fff; }
+.xsheet__btns .ghost { margin-left: auto; border-color: transparent; color: #5d5853; }
+.xsheet__btns .ghost:hover { background: none; color: #1f1c19; }

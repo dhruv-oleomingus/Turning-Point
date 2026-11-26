@@ -502,12 +502,18 @@ addEventListener('keydown', e => {
 
 /* ---------- postcard (explorations/shared/postcard.js): the view as it is, drawn again with its long side at 1800 px ---------- */
 TPPostcard.attach(document.getElementById('postcard'), () => {
-  const w = stage.clientWidth, h = stage.clientHeight, pr = renderer.getPixelRatio();
-  renderer.setPixelRatio(1800 / Math.max(w, h)); renderer.setSize(w, h, false);
+  // always the card's shape (3:2, 1800 × 1200), whatever the frame's: the camera set as layout() sets it for 3:2
+  const w = stage.clientWidth, h = stage.clientHeight, pr = renderer.getPixelRatio(), keep = {aspect: camera.aspect, fov: camera.fov};
+  const asp = 1.5, fov = 50, tv = Math.tan(fov * D2R / 2), dist = Math.max(14, 6.6 / tv, 7.5 / (tv * asp)) * CLOSER;
+  camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix();
+  camera.position.set(Math.sin(view.az) * dist, EYE, Math.cos(view.az) * dist); camera.lookAt(0, EYE, 0);
+  if (look.s > 0) camera.rotateX(ease(look.s) * LOOK_MAX * look.dir);
+  renderer.setPixelRatio(1); renderer.setSize(1800, 1200, false);
   renderer.render(scene, camera);
-  const out = document.createElement('canvas'); out.width = renderer.domElement.width; out.height = renderer.domElement.height;
+  const out = document.createElement('canvas'); out.width = 1800; out.height = 1200;
   out.getContext('2d').drawImage(renderer.domElement, 0, 0);          // read straight after drawing
   renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
+  camera.aspect = keep.aspect; camera.fov = keep.fov; camera.updateProjectionMatrix();   // the loop puts the camera back
   return out;
 }, 'flux');
 
