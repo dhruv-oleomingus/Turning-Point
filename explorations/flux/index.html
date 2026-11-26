@@ -84,6 +84,12 @@ const ATLAS = TEX_SET === 'atlas'
 const EYE = 1.65;                                         /* standing eye height = horizon = flip axis */
 const FLIP_DUR = 3.0, ROLL_DUR = 1.2;
 const STAG_APART = 0.07, STAG_GATHER = 0.055;             /* seconds between successive arms (plus a little at random, coming apart) */
+/* EXPERIMENT: more copies of the structure in the background, in a ring on the ground beyond the walk-around;
+   each turns slowly on its own and comes apart (and back) with the rest. ?copies=0 shows the one alone. */
+const COPIES = +(new URLSearchParams(location.search).get('copies') ?? 6);
+const COPY_RING = [15, 21];                               /* metres from the centre */
+const COPY_TURN = [0.04, 0.09];                           /* rad/s each copy turns (either way) */
+const copies = [];
 const SPIN_SPEED = 0;                                     /* rad/s while inverted (0: it holds still as it comes apart; it was 0.14) */
 const LIT = false;                                        /* false: no lights or shadows — every surface shows its texture evenly */
 const PL = 48.8;                                          /* ground slab: 4 × the 40 ft plinth */
@@ -223,15 +229,17 @@ function startAnim(turn, roll, now) {
 
 function schedule(toFlipped, at) {
   if (toFlipped) {
-    let i = 0;
+    const n = {};   // counted per structure: they all come apart together, each in its own rhythm
     for (const a of order) {
-      if (a.mode === 'home') a.pend = {type: 'fall', at: at + 0.3 + (i++) * STAG_APART + rnd(0, 0.35)};
+      const i = n[a.copy] = (n[a.copy] || 0) + 1, lag = a.copy ? copies[a.copy - 1].lag : 0;
+      if (a.mode === 'home') a.pend = {type: 'fall', at: at + 0.3 + lag + i * STAG_APART + rnd(0, 0.35)};
       else if (a.mode === 'rise') a.pend = {type: 'fall', at};
       else a.pend = null;
     }
   } else {
+    const n = {};
     arms.filter(a => a.mode === 'float').sort((p, q) => q.seq - p.seq)
-      .forEach((a, i) => a.pend = {type: 'rise', at: at + 0.2 + i * STAG_GATHER});
+      .forEach(a => { const i = n[a.copy] = (n[a.copy] || 0) + 1; a.pend = {type: 'rise', at: at + 0.2 + (a.copy ? copies[a.copy - 1].lag * 0.5 : 0) + i * STAG_GATHER}; });
     for (const a of arms) {
       if (a.mode === 'fall') a.pend = {type: 'rise', at};
       else if (a.mode === 'home') a.pend = null;
@@ -365,6 +373,9 @@ function loadTex(a) {
   });
 }
 
+const armMaterial = () => LIT
+  ? new THREE.MeshStandardMaterial({color: '#83492a', roughness: 0.84, metalness: 0.1, side: THREE.DoubleSide})
+  : new THREE.MeshBasicMaterial({color: '#83492a', side: THREE.DoubleSide, toneMapped: false});   // unlit: the texture's own colours
 const onModel = gltf => {
   structure.add(gltf.scene);
   scene.updateMatrixWorld(true);
@@ -391,11 +402,25 @@ const onModel = gltf => {
     const slot = new THREE.Object3D();
     slot.position.copy(mesh.position); slot.quaternion.copy(mesh.quaternion); slot.scale.copy(mesh.scale);
     mesh.parent.add(slot); mesh.parent.remove(mesh); content.add(mesh);
-    mesh.material = LIT
-      ? new THREE.MeshStandardMaterial({color: '#83492a', roughness: 0.84, metalness: 0.1, side: THREE.DoubleSide})
-      : new THREE.MeshBasicMaterial({color: '#83492a', side: THREE.DoubleSide, toneMapped: false});   // unlit: the texture's own colours
+    mesh.material = armMaterial();
     mesh.castShadow = mesh.receiveShadow = LIT;
-    arms.push({mesh, slot, key: f.key, lc, mode: 'home', pend: null, seq: 0});
+    slot.name = 'slot:' + f.key;
+    arms.push({mesh, slot, key: f.key, lc, mode: 'home', pend: null, seq: 0, copy: 0});
+  }
+  /* the copies: the model (its slots, now the arms are out of it) cloned, set out in a ring, each arm a mesh of its own */
+  const firsts = arms.slice();
+  for (let c = 1; c <= COPIES; c++) {
+    const g = new THREE.Group(), ang = (c - 1) / COPIES * PI * 2 + rnd(-0.3, 0.3), r = rnd(...COPY_RING);
+    g.position.set(Math.sin(ang) * r, 0, Math.cos(ang) * r);
+    g.rotation.y = rnd(0, PI * 2);
+    const sc = gltf.scene.clone(true); g.add(sc); structure.add(g);
+    copies.push({g, w: rnd(...COPY_TURN) * (Math.random() < 0.5 ? -1 : 1), lag: rnd(0, 0.6)});
+    for (const a0 of firsts) {
+      const slot = sc.getObjectByName('slot:' + a0.key); if (!slot) continue;
+      const mesh = new THREE.Mesh(a0.mesh.geometry, armMaterial());
+      content.add(mesh);
+      arms.push({mesh, slot, key: a0.key, lc: a0.lc, mode: 'home', pend: null, seq: 0, copy: c});
+    }
   }
   scene.updateMatrixWorld(true);
   /* highest arms go first: once inverted they hang lowest */
@@ -517,6 +542,7 @@ renderer.setAnimationLoop(() => {
   spin += spinV * dt;
   world.quaternion.copy(qFlip);
   structure.rotation.y = spin;
+  for (const c of copies) c.g.rotation.y += c.w * dt;
   world.updateMatrixWorld(true);
   invContent.copy(content.matrixWorld).invert();
 
