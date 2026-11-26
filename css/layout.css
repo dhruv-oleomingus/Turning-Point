@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-25 18:28).
+   css/layout.css — written by admin/layout.html (2026-11-26 09:48).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -84,7 +84,7 @@
     text-align: justify;
   }
   .meta {   /* Links: columns 13–14, rows 1 */
-    left: calc(1.4 * var(--u));
+    left: calc(1.25 * var(--u));
     top: calc(.2 * var(--u));
     width: calc(1.6 * var(--u));
     font-size: calc(.2 * var(--u));
@@ -186,9 +186,9 @@
     color: var(--ink);
     text-align: left;
   }
-  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .phead .back {   /* Back: columns 12–14, rows 2 */
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)) .phead .back {   /* Back: columns 11–14, rows 2 */
     position: absolute; margin: 0; grid-area: auto;
-    left: calc(10.5 * var(--u));
+    left: calc(10.25 * var(--u));
     top: calc(-1 * .5 * var(--u));
     width: calc(3 * var(--u));
     font-size: calc(.32 * var(--u));
@@ -275,9 +275,9 @@
     color: var(--ink);
     text-align: left;
   }
-  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .phead .back {   /* Back: columns 12–14, rows 2 */
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .phead .back {   /* Back: columns 11–14, rows 2 */
     position: absolute; margin: 0; grid-area: auto;
-    left: calc(10.5 * var(--u));
+    left: calc(10.25 * var(--u));
     top: calc(-1 * .5 * var(--u));
     width: calc(3 * var(--u));
     font-size: calc(.32 * var(--u));
@@ -407,8 +407,8 @@
     text-align: left;
   }
   html.is-panel .frame:has(> .panel.is-cards) .panel.is-cards .phead .back {   /* Back: columns 13–14, rows 2 */
-    left: calc(12.5 * var(--u));
-    top: calc(.99 * var(--u));
+    left: calc(12.25 * var(--u));
+    top: var(--u);
     width: calc(1.5 * var(--u));
     font-size: calc(.3 * var(--u));
     line-height: 1;

@@ -310,8 +310,8 @@ window.SITE = {
             {
               "role": "Additional Credits",
               "names": [
-                "Irena Romendik",
                 "Sharmila Sagra",
+                "Irena Romendik",
                 "Shrikant Paul",
                 "Piyush Thakkar"
               ]
@@ -337,11 +337,11 @@ window.SITE = {
         {
           "type": "links",
           "span": 2,
-          "title": "Follow",
+          "title": "",
           "links": [
             {
               "label": "Instagram",
-              "url": "#"
+              "url": "https://www.instagram.com/anant_national_university/"
             },
             {
               "label": "Anant University",
