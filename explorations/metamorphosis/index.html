@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f4efe4" />
+    <meta name="theme-color" content="#fbfaf6" />
     <title>Metamorphosis — Turning Point</title>
     <meta name="description" content="A web accompaniment to Turning Point — scroll to turn the column." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -13,7 +13,10 @@
          Postcard beside the frame (explorations/shared). The piece itself (assets/index-*.js) is untouched: it
          sizes itself to #stage, which is placed below; its WebGL canvas keeps its drawing so a postcard can be taken. -->
     <link rel="stylesheet" href="../shared/explore.css?v=20261126a">
+    <!-- the passage inside the structure: Noto Serif italic (the risograph print is in assets/index-*.js, Cf) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@1,400&display=swap">
     <style>
+      :root { --bg: #fbfaf6; }                  /* the paper, nearer white (as the piece's own background) */
       html, body { background: var(--surround); }
       body, #title, #caption, #hint, #counter, #loader { font-family: Roboto, Arial, sans-serif; }
       #stage { box-shadow: none; }
