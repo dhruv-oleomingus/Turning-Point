@@ -4,11 +4,12 @@
    The front is the piece as it stands (each page hands over a canvas of its frame); the back is drawn
    from js/postcard.js (window.TP_POSTCARD), which the layout editor (admin/layout.html → Postcard) writes:
    where each part of the back sits, its words and type, and the collection of quotes one is picked from.
-   The result is a two-page PDF, 6 × 4 inches (the front upright when the frame is upright), written
-   here, no library: each page one JPEG at 300 dpi.
+   The result is a two-page PDF, 6 × 4 inches, both sides lying down, written here, no library: each page
+   one JPEG at 300 dpi. The Postcard button opens a small sheet with the card: Download, and Share or email.
 
-     TPPostcard.attach(button, () => canvasOfTheFront, "flux")   // a Postcard button (4th argument { stamp: path }:
-                                                                  // a picture for the stamp, rather than the front)
+     TPPostcard.attach(button, () => canvasOfTheFront, "flux", opts)   // a Postcard button. opts: { stamp: path }
+                     // a picture for the stamp rather than the front; { portrait: "rotate" } an upright front turned to
+                     // fill the card; { bg } the card's colour around an upright front
      TPPostcard.make(frontCanvas, "flux")                         // or straight away
      TPPostcard.drawBack(ctx, w, h, config, { front, quote })     // the back on any canvas (the editor uses it)
      TPPostcard.textFront(title, paragraphs, w, h)                // a typeset front, for a piece still in progress
@@ -205,36 +206,96 @@
     return new Blob(parts, { type: "application/pdf" });
   }
 
-  /* the postcard from a canvas of the front (any size; its shape decides which way up the card is) */
+  /* The postcard from a canvas of the front. The card is always 6 × 4 in, lying down, as its back is. A front of
+     another shape (an upright frame, on a phone) is fitted onto it: opts.portrait "rotate" turns it a quarter turn
+     to fill the card (for a piece that reads either way), otherwise it sits whole in the middle on opts.bg. */
   const LONG = 1800, SHORT = 1200, PT_LONG = 6 * 72, PT_SHORT = 4 * 72;
-  async function make(front, name = "turning-point", opts = {}) {
-    const upright = front.height > front.width;
-    const fw = upright ? SHORT : LONG, fh = upright ? LONG : SHORT;
-    const f = document.createElement("canvas"); f.width = fw; f.height = fh;
+  async function build(front, opts = {}) {
+    const f = document.createElement("canvas"); f.width = LONG; f.height = SHORT;
     const g = f.getContext("2d");
-    g.fillStyle = "#ffffff"; g.fillRect(0, 0, fw, fh);
-    const s = Math.max(fw / front.width, fh / front.height);           // the frame is the card's shape: fill it
-    g.drawImage(front, (fw - front.width * s) / 2, (fh - front.height * s) / 2, front.width * s, front.height * s);
+    g.fillStyle = opts.bg || "#ffffff"; g.fillRect(0, 0, LONG, SHORT);
+    const fw = front.width, fh = front.height;
+    if (fh > fw * 1.05 && opts.portrait === "rotate") {
+      const s = Math.max(LONG / fh, SHORT / fw);
+      g.save(); g.translate(LONG / 2, SHORT / 2); g.rotate(-Math.PI / 2); g.drawImage(front, -fw * s / 2, -fh * s / 2, fw * s, fh * s); g.restore();
+    } else {
+      const s = fh > fw * 1.05 ? Math.min(LONG / fw, SHORT / fh) : Math.max(LONG / fw, SHORT / fh);
+      g.drawImage(front, (LONG - fw * s) / 2, (SHORT - fh * s) / 2, fw * s, fh * s);
+    }
     const b = document.createElement("canvas"); b.width = LONG; b.height = SHORT;
     await drawBack(b.getContext("2d"), LONG, SHORT, config(), { front: f, stamp: opts.stamp });
-    const pages = [
-      { bytes: await toJpeg(f), w: fw, h: fh, pw: upright ? PT_SHORT : PT_LONG, ph: upright ? PT_LONG : PT_SHORT },
+    const blob = pdf([
+      { bytes: await toJpeg(f), w: LONG, h: SHORT, pw: PT_LONG, ph: PT_SHORT },
       { bytes: await toJpeg(b), w: LONG, h: SHORT, pw: PT_LONG, ph: PT_SHORT }
-    ];
-    const url = URL.createObjectURL(pdf(pages)), a = document.createElement("a");
-    a.href = url; a.download = `turning-point-${name}-postcard.pdf`; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    ]);
+    const thumb = document.createElement("canvas"); thumb.width = 600; thumb.height = 400;
+    thumb.getContext("2d").drawImage(f, 0, 0, 600, 400);
+    return { blob, preview: thumb.toDataURL("image/jpeg", 0.85) };
+  }
+  function download(blob, file) {
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = file; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  async function make(front, name = "turning-point", opts = {}) {
+    const r = await build(front, opts); download(r.blob, `turning-point-${name}-postcard.pdf`);
+  }
+
+  /* Ready: a small sheet with the card, to download it, or to share or email it. Sharing uses the device's own
+     share sheet (phones, and Safari / Edge on computers): Mail, Messages, WhatsApp, Save to Files … with the PDF
+     attached. Where that isn't offered, Email downloads the PDF and opens a new email to attach it to. */
+  const SITE_URL = "https://turningpoint.anu.edu.in/";
+  function sheet(r, name) {
+    const file = `turning-point-${name}-postcard.pdf`;
+    let pdfFile = null;
+    try { pdfFile = new File([r.blob], file, { type: "application/pdf" }); } catch (e) {}
+    const canShare = !!(pdfFile && navigator.canShare && navigator.canShare({ files: [pdfFile] }));
+    const page = SITE_URL + "explorations/" + name + "/";
+    const subject = "A postcard from Turning Point";
+    const words = `I made this postcard in ${name.charAt(0).toUpperCase() + name.slice(1)}, one of the explorations of Turning Point — an installation by Anant National University for the India Art Biennale 2026: ${page}`;
+    const el = document.createElement("div");
+    el.className = "xsheet"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Your postcard");
+    el.innerHTML = `<div class="xsheet__card">
+        <img class="xsheet__front" alt="The front of your postcard" src="${r.preview}">
+        <p class="xsheet__title">Your postcard</p>
+        <p class="xsheet__note">A two-page PDF, 6 × 4 in: the front, and the back to write on.${canShare ? "" : " <span data-note hidden>Your email opens in a moment: attach the PDF that has just downloaded.</span>"}</p>
+        <div class="xsheet__btns">
+          ${canShare ? `<button type="button" class="primary" data-a="share">Share or email</button>` : ""}
+          <button type="button" class="${canShare ? "" : "primary"}" data-a="download">Download</button>
+          ${canShare ? "" : `<button type="button" data-a="mail">Email</button>`}
+          <button type="button" class="ghost" data-a="close">Close</button>
+        </div>
+      </div>`;
+    const close = () => { el.remove(); removeEventListener("keydown", esc); };
+    const esc = e => { if (e.key === "Escape") close(); };
+    addEventListener("keydown", esc);
+    el.addEventListener("click", async e => {
+      if (e.target === el) return close();
+      const a = e.target.closest("[data-a]"); if (!a) return;
+      if (a.dataset.a === "close") close();
+      else if (a.dataset.a === "download") download(r.blob, file);
+      else if (a.dataset.a === "share") {
+        try { await navigator.share({ files: [pdfFile], title: subject, text: words }); }
+        catch (err) { if (err && err.name !== "AbortError") download(r.blob, file); }
+      } else if (a.dataset.a === "mail") {
+        download(r.blob, file);
+        const n = el.querySelector("[data-note]"); if (n) n.hidden = false;
+        setTimeout(() => { location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(words + "\n\n(The postcard is attached.)")}`; }, 600);
+      }
+    });
+    document.body.appendChild(el);
+    (el.querySelector(".primary") || el.querySelector("button")).focus();
   }
   function attach(btn, getFront, name, opts) {
     if (!btn) return;
     btn.addEventListener("click", async () => {
       if (btn.disabled) return;
       const label = btn.textContent; btn.disabled = true; btn.textContent = "Making…";
-      try { const f = await getFront(); if (f) await make(f, name, opts); }
+      try { const f = await getFront(); if (f) sheet(await build(f, opts), name); }
       catch (e) { console.warn("Postcard failed:", e); }
       btn.disabled = false; btn.textContent = label;
     });
   }
 
-  window.TPPostcard = { DEFAULT, COLOURS, FONTS, config, fonts, drawBack, textFront, make, attach, pickQuote };
+  window.TPPostcard = { DEFAULT, COLOURS, FONTS, config, fonts, drawBack, textFront, build, make, attach, pickQuote };
 })();
