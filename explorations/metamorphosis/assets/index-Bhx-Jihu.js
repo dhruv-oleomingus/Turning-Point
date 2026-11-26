@@ -4486,12 +4486,12 @@ float rsNoise(vec2 p) {
 }
 float rsLayer(vec2 t, vec2 off, float seed, vec2 px) {
   vec2 q = t + off * px;
-  vec2 dx = vec2(px.x * 1.6, 0.0), dy = vec2(0.0, px.y * 1.6);
-  float a = texture2D(uText, q).a * 0.36
-          + (texture2D(uText, q + dx).a + texture2D(uText, q - dx).a + texture2D(uText, q + dy).a + texture2D(uText, q - dy).a) * 0.16;
+  vec2 dx = vec2(px.x * 0.9, 0.0), dy = vec2(0.0, px.y * 0.9);
+  float a = texture2D(uText, q).a * 0.6
+          + (texture2D(uText, q + dx).a + texture2D(uText, q - dx).a + texture2D(uText, q + dy).a + texture2D(uText, q - dy).a) * 0.1;
   vec2 g = q / px;                                                  // in the canvas's pixels
   float edge = rsNoise(g * 0.32 + seed) - 0.5;                     // ragged, bleeding edges
-  float m = smoothstep(0.36, 0.66, a + edge * 0.34);
+  float m = smoothstep(0.38, 0.62, a + edge * 0.14);
   float grain = smoothstep(0.2, 0.8, rsNoise(g * 1.9 + seed * 3.1)); // the drum's grain
   float pin = rsHash(floor(g * 0.9) + seed) < 0.07 ? 0.45 : 1.0;    // and the odd pinhole
   return m * (0.62 + 0.38 * grain) * pin;
@@ -4502,8 +4502,8 @@ void main() {
   vec2 t = vec2((vLocal.x - uBlock.x) / uBlock.y, vLocal.y / uBlock.z) + 0.5;
   if (t.x < -0.02 || t.x > 1.02 || t.y < -0.02 || t.y > 1.02) discard;
   vec2 px = 1.0 / vec2(textureSize(uText, 0));
-  float aP = rsLayer(t, vec2(2.2, -1.4), 1.7, px);                 // pink, nudged one way
-  float aB = rsLayer(t, vec2(-1.6, 1.2), 7.3, px);                 // blue, the other
+  float aP = rsLayer(t, vec2(0.9, -0.6), 1.7, px);                 // pink, nudged one way
+  float aB = rsLayer(t, vec2(-0.7, 0.5), 7.3, px);                 // blue, the other
   float al = max(aP, aB);
   if (al <= 0.003) discard;
   vec3 ink = mix(vec3(1.0), uPink, aP * 0.92) * mix(vec3(1.0), uBlue, aB * 0.88);
