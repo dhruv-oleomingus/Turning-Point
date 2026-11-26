@@ -1,7 +1,7 @@
 {
   "app": "turning-point-layout",
   "version": 2,
-  "savedAt": 1795586550178,
+  "savedAt": 1795611490379,
   "viewport": {
     "w": 1920,
     "h": 1080
@@ -808,9 +808,9 @@
           "type": "strip",
           "label": "Pattern strip",
           "x": 14,
-          "y": 2,
+          "y": 0,
           "w": 1,
-          "h": 6,
+          "h": 8,
           "sel": ".sliver",
           "variant": "outline",
           "id": "ex23z",

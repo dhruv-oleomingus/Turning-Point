@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-25 11:32).
+   css/layout.css — written by admin/layout.html (2026-11-25 18:28).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -427,11 +427,11 @@
   html.is-panel .frame:has(> .panel.is-cards) .panel.is-cards .card h3 {
     font-size: calc(.4 * var(--u));
   }
-  html.is-panel .frame:has(> .panel.is-cards) .sliver {   /* Pattern strip: columns 15, rows 3–8 */
+  html.is-panel .frame:has(> .panel.is-cards) .sliver {   /* Pattern strip: columns 15, rows 1–8 */
     left: calc(var(--pl) + 14 * var(--u));
-    top: calc(var(--mt) + 2 * var(--u));
+    top: var(--mt);
     width: var(--u);
-    height: calc(6 * var(--u));
+    height: calc(8 * var(--u));
     --tp-draw: outline;
     --tp-outlines: 0.2;
     --tp-empty: 0.25;
