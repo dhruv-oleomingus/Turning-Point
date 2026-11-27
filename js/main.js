@@ -131,7 +131,7 @@
     dirty: true
   };
   const N_DESKTOP = 7, N_MOBILE = 5;
-  const LOGO_PAD = .25;      // white space kept round the university logo, in modules (rounded out to the smaller squares)   // desktop: the 7 module rows of the home grid (css: rows 1–7)
+  const LOGO_PAD = .25;      // white space kept round a logo with no --tp-pad of its own (the layout editor sets one), in modules (rounded out to the smaller squares)   // desktop: the 7 module rows of the home grid (css: rows 1–7)
   const makeStrips = (n, p = 0) => Array.from({ length: n }, () => ({ p, from: p, to: p, t0: 0, dur: 1, delay: 0 }));
   S.strips = makeStrips(N_DESKTOP);
 
@@ -289,7 +289,9 @@
     // of the area runs out to that edge, so a logo in a corner sits in a clean notch
     keepOut = [];
     if (!mobile) for (const el of logoEls) {
-      const lg = relRect(el), sub = (uw + gapPx) / TILE_SUB, pad = LOGO_PAD * (uw + gapPx);
+      // how far: the logo's own --tp-pad (set in the layout editor, css/layout.css), else LOGO_PAD
+      const pm = parseFloat(getComputedStyle(el).getPropertyValue("--tp-pad"));
+      const lg = relRect(el), sub = (uw + gapPx) / TILE_SUB, pad = (isFinite(pm) ? pm : LOGO_PAD) * (uw + gapPx);
       if (lg.w <= 1) continue;
       let x0 = home.x + Math.floor((lg.x - pad - home.x) / sub) * sub + 1, x1 = home.x + Math.ceil((lg.x + lg.w + pad - home.x) / sub) * sub - 1;
       let y0 = home.y + Math.floor((lg.y - pad - home.y) / sub) * sub + 1, y1 = home.y + Math.ceil((lg.y + lg.h + pad - home.y) / sub) * sub - 1;
