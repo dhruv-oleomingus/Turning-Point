@@ -1,7 +1,7 @@
 {
   "app": "turning-point-layout",
   "version": 2,
-  "savedAt": 1795702609043,
+  "savedAt": 1795785992764,
   "viewport": {
     "w": 1920,
     "h": 1080
@@ -54,8 +54,8 @@
           "locked": false,
           "tp": {
             "draw": "mix",
-            "outlines": 0.6,
-            "empty": 0.07,
+            "outlines": 0.4,
+            "empty": 0.1,
             "holes": "edges",
             "blocks": "mixed",
             "scale": "varied",
@@ -66,25 +66,27 @@
         {
           "type": "logo",
           "label": "University logo",
-          "x": 0,
-          "y": 7.34,
-          "w": 1.65,
-          "h": 0.66,
+          "x": 4.25,
+          "y": 7.3,
+          "w": 1.75,
+          "h": 0.7,
           "sel": ".frame > .org",
           "ratio": 2.5,
-          "id": "e3013"
+          "id": "e3013",
+          "pad": 0.05
         },
         {
           "type": "logo",
           "label": "Biennale logo",
-          "x": 2,
-          "y": 7.294,
-          "w": 1.5,
-          "h": 0.706,
+          "x": 0,
+          "y": 0,
+          "w": 3.25,
+          "h": 2.238,
           "sel": ".frame > .biennale",
-          "ratio": 2.125,
+          "ratio": 1.452,
           "src": "../assets/img/india-biennale-logo.png",
-          "id": "ezi1z"
+          "id": "ezi1z",
+          "pad": 0.05
         },
         {
           "type": "text",
@@ -185,7 +187,7 @@
           "x": 14,
           "y": 0,
           "w": 1,
-          "h": 8.25,
+          "h": 8,
           "sel": ".sliver",
           "variant": "outline",
           "id": "eadil",
@@ -553,7 +555,7 @@
           "type": "box",
           "label": "10 · carousel — 2 images",
           "x": 0.5,
-          "y": 44.513,
+          "y": 44.5,
           "w": 12.5,
           "h": 7.987,
           "item": "kiakk43",

@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-26 19:46).
+   css/layout.css — written by admin/layout.html (2026-11-27 18:56).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -35,23 +35,25 @@
     width: calc(6 * var(--u));
     height: calc(8 * var(--u));
     --tp-draw: mix;
-    --tp-outlines: 0.6;
-    --tp-empty: 0.07;
+    --tp-outlines: 0.4;
+    --tp-empty: 0.1;
     --tp-holes: edges;
     --tp-blocks: mixed;
     --tp-scale: varied;
     --tp-seed: visit;
     --tp-rows: 7;
   }
-  .frame > .org {   /* University logo: columns 1–2, rows 8 */
-    left: var(--pl);
-    top: calc(var(--mt) + 7.34 * var(--u));
-    width: calc(1.65 * var(--u));
+  .frame > .org {   /* University logo: columns 5–6, rows 8 */
+    left: calc(var(--pl) + 4.25 * var(--u));
+    top: calc(var(--mt) + 7.3 * var(--u));
+    width: calc(1.75 * var(--u));
+    --tp-pad: .05;
   }
-  .frame > .biennale {   /* Biennale logo: columns 3–4, rows 8 */
-    left: calc(var(--pl) + 2 * var(--u));
-    top: calc(var(--mt) + 7.294 * var(--u));
-    width: calc(1.5 * var(--u));
+  .frame > .biennale {   /* Biennale logo: columns 1–4, rows 1–3 */
+    left: var(--pl);
+    top: var(--mt);
+    width: calc(3.25 * var(--u));
+    --tp-pad: .05;
   }
   .frame > .intro {   /* Headline: columns 7–13, rows 2–3 + Intro text */
     left: calc(var(--pl) + 6.25 * var(--u));
@@ -118,11 +120,11 @@
     font-style: italic;
     line-height: 1;
   }
-  html:not(.is-panel) .frame .sliver {   /* Pattern strip: columns 15, rows 1–9 */
+  html:not(.is-panel) .frame .sliver {   /* Pattern strip: columns 15, rows 1–8 */
     left: calc(var(--pl) + 14 * var(--u));
     top: var(--mt);
     width: var(--u);
-    height: calc(8.25 * var(--u));
+    height: calc(8 * var(--u));
     --tp-draw: outline;
     --tp-outlines: 0.2;
     --tp-empty: 0.12;
@@ -379,7 +381,7 @@
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="kiakk43"] {   /* 10 · carousel — 2 images: columns 1–13, rows 45–53 */
     position: absolute; margin: 0; padding: 0; grid-column: auto;
     left: 0;
-    top: calc(44.013 * var(--u));
+    top: calc(44 * var(--u));
     width: calc(12.5 * var(--u));
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="kiakk43"] .media {
@@ -459,5 +461,8 @@
     --tp-blocks: rows;
     --tp-scale: 1;
     --tp-seed: visit;
+  }
+  .frame > .mark {   /* Outline square: not on the home page here */
+    display: none;
   }
 }
