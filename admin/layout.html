@@ -1448,6 +1448,10 @@ function cssText() {
       add(S_(sel), d, where(e) + (lift ? ` (lifted ${fmt(lift)} for the heading above it)` : ""));
     });
   });
+  // the outline square by the links (style.css puts it at the top of column 15): off the site too once the home
+  // page here no longer has it (deleted or hidden), or the strip would be drawn over it
+  const homeP = S.pages.find(q => (q.kind || q.id) === "home");
+  if (homeP && !homeP.els.some(o => o.sel === ".frame > .mark" && !o.hidden)) add(".frame > .mark", ["display: none;"], "Outline square: not on the home page here");
 
   const now = new Date();
   out.push(`/* =====================================================================
