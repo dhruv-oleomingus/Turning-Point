@@ -1,5 +1,5 @@
 /* =====================================================================
-   css/layout.css — written by admin/layout.html (2026-11-26 09:48).
+   css/layout.css — written by admin/layout.html (2026-11-26 19:46).
    Loaded after style.css, so everything here wins. Don't edit by hand:
    change the layout in the console and press "Save to site" again.
    To go back to style.css alone, delete this file (or empty it).
@@ -118,11 +118,11 @@
     font-style: italic;
     line-height: 1;
   }
-  html:not(.is-panel) .frame .sliver {   /* Pattern strip: columns 15, rows 1–8 */
+  html:not(.is-panel) .frame .sliver {   /* Pattern strip: columns 15, rows 1–9 */
     left: calc(var(--pl) + 14 * var(--u));
     top: var(--mt);
     width: var(--u);
-    height: calc(8 * var(--u));
+    height: calc(8.25 * var(--u));
     --tp-draw: outline;
     --tp-outlines: 0.2;
     --tp-empty: 0.12;
@@ -230,7 +230,7 @@
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) > .panel::after {
     content: ""; position: absolute; left: 0; width: 1px; height: 1px;
-    top: calc(44.986 * var(--u));
+    top: calc(62 * var(--u));
   }
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) > .panel {   /* Section (.panel): columns 1–14, rows 2–8 (lifted 1 for the heading above it) */
     left: calc(var(--pl) + .5 * var(--u));
@@ -350,7 +350,7 @@
     top: calc(30.5 * var(--u));
     width: calc(3.7 * var(--u));
   }
-  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="kbjhoan"] {   /* 8 · carousel — 8 images: columns 1–13, rows 37–44 */
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="kbjhoan"] {   /* 8 · carousel — 7 images: columns 1–13, rows 37–44 */
     position: absolute; margin: 0; padding: 0; grid-column: auto;
     left: 0;
     top: calc(35.5 * var(--u));
@@ -375,6 +375,26 @@
   html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="khzarhv"] .media {
     aspect-ratio: auto;
     height: calc(6.257 * var(--u));
+  }
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="kiakk43"] {   /* 10 · carousel — 2 images: columns 1–13, rows 45–53 */
+    position: absolute; margin: 0; padding: 0; grid-column: auto;
+    left: 0;
+    top: calc(44.013 * var(--u));
+    width: calc(12.5 * var(--u));
+  }
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="kiakk43"] .media {
+    aspect-ratio: auto;
+    height: calc(7.987 * var(--u));
+  }
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="k68glyq"] {   /* 11 · carousel — 2 images: columns 1–13, rows 54–61 */
+    position: absolute; margin: 0; padding: 0; grid-column: auto;
+    left: 0;
+    top: calc(52.513 * var(--u));
+    width: calc(12.5 * var(--u));
+  }
+  html.is-panel .frame:has(> .panel:not(.is-feat):not(.is-cards)[data-sec="structure"]) .panel > .box[data-key="k68glyq"] .media {
+    aspect-ratio: auto;
+    height: calc(7.987 * var(--u));
   }
 
   /* ---------- Explore (cards)  (index.html#explore) ---------- */

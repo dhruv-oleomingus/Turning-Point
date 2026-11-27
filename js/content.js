@@ -24,7 +24,7 @@ window.SITE = {
   "socials": [
     {
       "label": "Instagram",
-      "url": "#"
+      "url": "https://www.instagram.com/anant_national_university/"
     }
   ],
   "sections": [
@@ -173,6 +173,11 @@ window.SITE = {
           "ratio": "1800/1273",
           "slides": [
             {
+              "src": "assets/img/process/fab-workshop-01.jpg",
+              "alt": "Perforated steel layers stacked in a workshop",
+              "caption": "Layers in the workshop."
+            },
+            {
               "src": "assets/img/process/fab-welding.jpg",
               "alt": "A welder working on a perforated steel box",
               "caption": "Welding a folded layer."
@@ -188,11 +193,6 @@ window.SITE = {
               "caption": "A cut plate, before weathering settles."
             },
             {
-              "src": "assets/img/process/fab-workshop-01.jpg",
-              "alt": "Perforated steel layers stacked in a workshop",
-              "caption": "Layers in the workshop."
-            },
-            {
               "src": "assets/img/process/fab-box-interior.jpg",
               "alt": "Interior of a perforated steel box",
               "caption": "Inside a layer: the patterned faces from within."
@@ -206,11 +206,6 @@ window.SITE = {
               "src": "assets/img/process/fab-corner.jpg",
               "alt": "Corner of stacked perforated steel boxes",
               "caption": "A corner of the stack."
-            },
-            {
-              "src": "assets/img/process/fab-hall.jpg",
-              "alt": "Perforated steel boxes in a fabrication hall",
-              "caption": "Layers laid out in the fabrication hall."
             }
           ],
           "key": "kbjhoan"
@@ -221,6 +216,42 @@ window.SITE = {
           "title": "",
           "body": "<p>The four columns of the work are perforated with a pattern of Jaalis. Here the geometric repetition of the traditional Jaali is reinvented, by cross-pollinating artificial neural networks and biological neural networks. The attempt is to widen the ambit of design focus from anthropocentrism to life itself. In doing so, the work responds to the landscape that surrounds the installation as well as the monument where it is situated. As you enter the partial enclosure of the pillars you can see this incomplete negotiation between the site and the work making emergence and dialogue its fundamental pivot. \n</p>",
           "key": "kncgvxe"
+        },
+        {
+          "type": "carousel",
+          "span": 3,
+          "ratio": "1800/1150",
+          "slides": [
+            {
+              "src": "assets/uploads/fab-workshop-02.jpg",
+              "alt": "Assembly",
+              "caption": "Layers laid out in the fabrication hall."
+            },
+            {
+              "src": "assets/uploads/fab-building2a.jpg",
+              "alt": "Assembly",
+              "caption": "Layers laid out in the fabrication hall."
+            }
+          ],
+          "key": "kiakk43"
+        },
+        {
+          "type": "carousel",
+          "span": 3,
+          "ratio": "1800/1150",
+          "slides": [
+            {
+              "src": "assets/uploads/shiip3b.jpg",
+              "alt": "Boxes on the Truck",
+              "caption": "The boxes being shipped"
+            },
+            {
+              "src": "assets/uploads/shiip3a.jpg",
+              "alt": "Boxes being packed",
+              "caption": "The boxes being packed"
+            }
+          ],
+          "key": "k68glyq"
         }
       ]
     },

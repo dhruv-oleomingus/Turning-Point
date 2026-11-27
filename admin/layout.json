@@ -1,7 +1,7 @@
 {
   "app": "turning-point-layout",
   "version": 2,
-  "savedAt": 1795666734578,
+  "savedAt": 1795702609043,
   "viewport": {
     "w": 1920,
     "h": 1080
@@ -99,10 +99,10 @@
           "color": "ink",
           "align": "justify",
           "cols": 1,
-          "text": "<span class='sc'>Turning Point</span> is an installation project by Anant University, created for the India Art Biennale 2026.",
+          "text": "<span class='sc'>Turning Point</span> is an installation project by Anant National University, created for the India Art Biennale 2026.",
           "sel": ".frame > .intro",
           "id": "e4i79",
-          "textFrom": "<span class='sc'>Turning Point</span> is an installation project by Anant University, created for the India Art Biennale 2026."
+          "textFrom": "<span class='sc'>Turning Point</span> is an installation project by Anant National University, created for the India Art Biennale 2026."
         },
         {
           "type": "text",
@@ -185,7 +185,7 @@
           "x": 14,
           "y": 0,
           "w": 1,
-          "h": 8,
+          "h": 8.25,
           "sel": ".sliver",
           "variant": "outline",
           "id": "eadil",
@@ -508,7 +508,7 @@
         },
         {
           "type": "box",
-          "label": "8 · carousel — 8 images",
+          "label": "8 · carousel — 7 images",
           "x": 0.5,
           "y": 36,
           "w": 12.5,
@@ -548,6 +548,36 @@
           "id": "ezx5k",
           "ratio": 1.758,
           "ratioText": "1800/1024"
+        },
+        {
+          "type": "box",
+          "label": "10 · carousel — 2 images",
+          "x": 0.5,
+          "y": 44.513,
+          "w": 12.5,
+          "h": 7.987,
+          "item": "kiakk43",
+          "kind": "carousel",
+          "cap": true,
+          "parent": "ez90l",
+          "id": "ezcsi",
+          "ratio": 1.565,
+          "ratioText": "1800/1150"
+        },
+        {
+          "type": "box",
+          "label": "11 · carousel — 2 images",
+          "x": 0.5,
+          "y": 53.013,
+          "w": 12.5,
+          "h": 7.987,
+          "item": "k68glyq",
+          "kind": "carousel",
+          "cap": true,
+          "parent": "ez90l",
+          "id": "e10jax",
+          "ratio": 1.565,
+          "ratioText": "1800/1150"
         }
       ],
       "stash": {
